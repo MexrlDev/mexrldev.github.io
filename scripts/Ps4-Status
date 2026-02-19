@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Exploit Chart — PS4</title>
+<link rel="icon" type="image/png" href="./img/icon.png" />
+<style>
+  :root{
+    --page-pad: 20px;
+    --card-radius: 12px;
+    --glass-bg: rgba(255,255,255,0.04);
+    --glass-border: rgba(255,255,255,0.06);
+    --accent: #ffffff;
+    --muted: rgba(255,255,255,0.65);
+    --shadow: rgba(0,0,0,0.36);
+    --gap: 14px;
+    --font-family: "Segoe UI", Roboto, system-ui, -apple-system, "Helvetica Neue", Arial;
+    --max-width: 1200px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;font-family:var(--font-family);color:var(--accent);background:#0b0b0b;}
+  .bg-fixed{position:fixed;inset:0;background-image:url('../img/Baek.png');background-size:cover;background-position:center;filter:brightness(0.48) contrast(1.05);z-index:-2}
+  .bg-overlay{position:fixed;inset:0;background:linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.32));z-index:-1}
+
+  .wrap{min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:36px 18px}
+  .panel{width:min(var(--max-width),96%);background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));border-radius:18px;padding:var(--page-pad);box-shadow:0 12px 40px var(--shadow);backdrop-filter:blur(8px);border:1px solid var(--glass-border)}
+
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+  .left-head{display:flex;flex-direction:column}
+  .title{font-size:20px;font-weight:700}
+  .subtitle{font-size:13px;opacity:0.9}
+
+  .controls{display:flex;gap:10px;align-items:center}
+  .btn{padding:8px 12px;border-radius:10px;border:1px solid var(--glass-border);background:rgba(255,255,255,0.02);color:var(--accent);cursor:pointer;font-weight:600}
+  .search{padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:var(--accent);outline:none;min-width:240px}
+
+  /* table-like chart */
+  .chart{width:100%;border-collapse:collapse;margin-top:8px}
+  .row{display:grid;grid-template-columns:220px 1fr 1fr 220px 320px;gap:12px;padding:12px;border-radius:12px;background:var(--glass-bg);border:1px solid var(--glass-border);align-items:start;margin-bottom:10px;box-shadow:0 6px 18px rgba(0,0,0,0.18)}
+
+  .row.header{font-weight:700;position:sticky;top:12px;z-index:5}
+  .cell{padding:6px 8px}
+  .firmware{font-weight:700}
+  .list{margin:0;padding-left:18px}
+  .small{font-size:13px;opacity:0.9}
+  .muted{color:var(--muted)}
+
+  /* responsive */
+  @media (max-width:1000px){
+    .row{grid-template-columns:160px 1fr;}
+    .row > .kernel,.row > .action,.row > .info{display:none}
+    .row.header{grid-template-columns:160px 1fr}
+  }
+  @media (max-width:560px){
+    .row{grid-template-columns:1fr}
+    .row > *{display:block}
+  }
+
+  .hint{font-size:13px;opacity:0.85;margin-top:8px;text-align:center}
+
+  .credit{font-size:12px;opacity:0.85;margin-top:10px;text-align:right}
+
+  /* small accessibility focus */
+  .row:focus-within{outline:3px solid rgba(255,255,255,0.05)}
+
+  /* collapsed toggles */
+  .toggle{font-size:12px;padding:6px 10px;border-radius:8px;border:1px solid var(--glass-border);background:transparent;cursor:pointer}
+
+</style>
+</head>
+<body>
+  <div class="bg-fixed" aria-hidden="true"></div>
+  <div class="bg-overlay" aria-hidden="true"></div>
+
+  <div class="wrap">
+    <div class="panel" role="main" aria-label="Exploit Chart">
+      <header>
+        <div class="left-head">
+          <div class="title">Exploit Chart</div>
+          <div class="subtitle">From ConsoleMods Wiki — simplified, rendered in your style</div>
+        </div>
+
+        <div class="controls">
+          <input id="search" class="search" type="search" placeholder="Filter firmware / exploits / keywords" aria-label="Search chart" />
+          <button class="btn" id="reset">Reset</button>
+          <div class="music-control" title="Play / Pause background music">
+            <div id="musicBtn" class="btn" aria-pressed="false">Play Music</div>
+          </div>
+        </div>
+      </header>
+
+      <div id="chartContainer" aria-live="polite">
+        <!-- Header row (rendered by JS) -->
+      </div>
+
+      <div class="hint small">Tip: add new entries in the <code>rows</code> array near the top of the script. No CSS edits required.</div>
+      <div class="credit muted">Owned by Mexrl</div>
+    </div>
+  </div>
+
+  <audio id="bgAudio" loop preload="auto"><source src="../music/bg.mp3" type="audio/mpeg"></audio>
+
+<script>
+/* ==========================
+   DATA: add / update rows here
+   Each item should have: firmware, userland (array), kernel (array), action (string), info (string)
+   Example:
+   rows.push({ firmware: 'Example', userland: ['Thing'], kernel: ['Thing2'], action: 'Stay', info: 'Some details' });
+   ========================== */
+const rows = [
+  {
+    firmware: 'Older than 5.05',
+    userland: ['Various'],
+    kernel: ['BadIRET (1.76)', 'NamedOBJ Exploit (<=4.07)', 'BPF Race Condition (4.55 to 5.03)', 'PPPwn (Theoretical)', 'Poopsploit (Theoretical)'],
+    action: 'Either stay for archival purposes, or update to 5.05',
+    info: 'Homebrew support is very limited, and even more games will require backports. Anything before 4.07 doesn\'t even have a homebrew enabler implementation.'
+  },
+  {
+    firmware: '5.05/5.07',
+    userland: ['CVE-2016-1859 (Webkit)', 'CVE-2017-7005 (Webkit, used with kernel exploit)', 'Lua loader (theoretical)', 'Mast1c0re (theoretical)', 'BD-JB (theoretical)'],
+    kernel: ['BPF Race Condition (Original)', 'PPPwn (Theoretical)', 'Lapse (Theoretical)', 'Poopsploit (Theoretical)'],
+    action: 'Stay on current firmware',
+    info: 'Considered the gold standard firmware because of its original exploits having stability and success rate. However, most games will require backports.'
+  },
+  {
+    firmware: '5.50 to 6.71',
+    userland: ['bad_hoist (Webkit)', 'CVE-2021-30849 (theoretical)', 'CVE-2021-30858 (theoretical)', 'buildBubbleTree (theoretical)', 'psFree (theoretical)', 'Save file exploits (theoretical)', 'Mast1c0re (theoretical)', 'BD-JB (theoretical)'],
+    kernel: ['CVE-2020-7457 (Implemented on 6.72)', 'CVE-2020-9892 (Theoretical)', 'PPPwn (Theoretical)', 'Poopsploit (Theoretical)'],
+    action: 'Update to 6.72 or 9.00 and not above',
+    info: 'This firmware range has exploits that are highly unstable. As such, it\'s easier to just update to 6.72 or 9.00.'
+  },
+  {
+    firmware: '6.72',
+    userland: ['- (see adjacent rows)'],
+    kernel: ['Original exploits optimized over time; good success rate and stability. See Standard Jailbreak instructions.'],
+    action: 'Either stay, or update to 9.00 and not above',
+    info: 'Original exploits were optimized overtime to have good success rate and stability. 9.00 - 9.60 may still be desired due to more game/homebrew support.'
+  },
+  {
+    firmware: '7.00, 7.01, 7.02',
+    userland: ['buildBubbleTree (implemented)', 'psFree', 'Save file exploit (theoretical)', 'Mast1c0re (theoretical)', 'BD-JB (theoretical)'],
+    kernel: ['CVE-2020-9892', 'PPPwn', 'Lapse', 'Poopsploit (Theoretical)'],
+    action: 'Stay or update to 9.00 (9.00 often preferred)',
+    info: '7.XX firmwares do have native webkit/kernel exploits. Recommended exploit is PSFree with Lapse.'
+  },
+  {
+    firmware: '7.50, 7.51, 7.55',
+    userland: ['See 7.00-7.02 list'],
+    kernel: ['See 7.00-7.02 list'],
+    action: 'Stay or update to 9.00',
+    info: 'Similar to other 7.XX firmwares.'
+  },
+  {
+    firmware: '8.00 to 8.52',
+    userland: ['psFree', 'Save file exploit (theoretical)', 'Mast1c0re (theoretical)', 'BD-JB (theoretical)'],
+    kernel: ['PPPwn', 'Lapse', 'Poopsploit (Theoretical)'],
+    action: 'Recommended: PSFree with Lapse',
+    info: '8.xx has PPPwn, which is not recommended. PSFree with Lapse is preferred.'
+  },
+  {
+    firmware: '9.00',
+    userland: ['CVE-2021-30858 (used w/ pOObs4)', 'psFree', 'Lua Loader', 'Netflix exploit', 'Mast1c0re', 'BD-JB'],
+    kernel: ['exfathax (pOObs4)', 'PPPwn', 'Lapse', 'Poopsploit'],
+    action: 'Stay on current firmware',
+    info: '9.00 can be seen as another gold standard version with high stability. PPPwn not recommended on 9.00.'
+  },
+  {
+    firmware: '9.03 to 9.60',
+    userland: ['CVE-2021-30858 (theoretical on 9.03 & 9.04)', 'psFree', 'Lua Loader', 'YARPE (Ren\'Py saves)', 'Netflix exploit', 'Mast1c0re', 'BD-JB'],
+    kernel: ['PPPwn', 'Lapse', 'Poopsploit'],
+    action: 'Either stay, or update to 9.60 and not above',
+    info: 'PPPwn is not recommended on this firmware range. PSFree with Lapse recommended.'
+  },
+  {
+    firmware: '10.00 to 10.71',
+    userland: ['Lua Loader', 'YARPE', 'Netflix-N-Hack', 'Mast1c0re', 'BD-JB'],
+    kernel: [],
+    action: 'Either stay, or update to 11.00 and not above',
+    info: 'These versions don\'t have a known Webkit exploit at the time of writing, but can still use PPPwn or BD-JB/Lua/Netflix.'
+  },
+  {
+    firmware: '11.00',
+    userland: [],
+    kernel: [],
+    action: 'Stay on current firmware',
+    info: 'Last firmware that has support for PPPwn. Recommended exploit: BD-JB if available.'
+  },
+  {
+    firmware: '11.02 to 11.52',
+    userland: ['Lapse', 'Poopsploit'],
+    kernel: ['Lapse', 'Poopsploit'],
+    action: 'Either stay, or update to 12.02 and not above',
+    info: 'BD-J is easiest; Lua-compatible Artemis games and Ren\'Py games are promising.'
+  },
+  {
+    firmware: '12.00',
+    userland: [],
+    kernel: [],
+    action: 'Either stay, or update to 12.02',
+    info: 'As of 12.00 the landscape is similar to nearby firmwares.'
+  },
+  {
+    firmware: '12.02',
+    userland: [],
+    kernel: [],
+    action: 'Stay on current firmware',
+    info: 'Stable choice at time of writing.'
+  },
+  {
+    firmware: '12.50, 12.52',
+    userland: ['Poopsploit'],
+    kernel: ['Poopsploit'],
+    action: 'BD-JB implementation available; proceed with caution',
+    info: 'Poopsploit is currently the kernel exploit for these versions.'
+  },
+  {
+    firmware: '13.00',
+    userland: ['Lua Loader', 'YARPE', 'Mast1c0re (theoretical)'],
+    kernel: [],
+    action: 'While a kernel exploit exists, there\'s no public entry point implemented',
+    info: 'No public entry point compatible with current libraries; Mast1c0re possible but limited.'
+  },
+  {
+    firmware: '13.02 or higher',
+    userland: [],
+    kernel: [],
+    action: 'Sell console, or stay',
+    info: 'No kernel exploits past 13.00; wait for future developments.'
+  }
+];
+
+/* ==========================
+   RENDERING - no CSS edits needed to add content
+   ========================== */
+const chart = document.getElementById('chartContainer');
+const search = document.getElementById('search');
+const resetBtn = document.getElementById('reset');
+
+function createHeader(){
+  const header = document.createElement('div');
+  header.className = 'row header';
+  header.innerHTML = `
+    <div class="cell firmware">Firmware</div>
+    <div class="cell">Userland Exploit(s)</div>
+    <div class="cell kernel">Kernel Exploit(s)</div>
+    <div class="cell action">Course of Action</div>
+    <div class="cell info">Information</div>
+  `;
+  chart.appendChild(header);
+}
+
+function renderRows(list){
+  // clear except header
+  chart.querySelectorAll('.row.data').forEach(n=>n.remove());
+  list.forEach(r => {
+    const el = document.createElement('div');
+    el.className = 'row data';
+    el.tabIndex = 0;
+
+    const userlandHTML = (r.userland && r.userland.length) ? `<ul class="list">${r.userland.map(it=>`<li>${escapeHtml(it)}</li>`).join('')}</ul>` : '<div class="small muted">—</div>';
+    const kernelHTML = (r.kernel && r.kernel.length) ? `<ul class="list">${r.kernel.map(it=>`<li>${escapeHtml(it)}</li>`).join('')}</ul>` : '<div class="small muted">—</div>';
+    const infoHTML = r.info ? `<div class="small">${escapeHtml(r.info)}</div>` : '<div class="small muted">—</div>';
+
+    el.innerHTML = `
+      <div class="cell firmware">${escapeHtml(r.firmware)}</div>
+      <div class="cell">${userlandHTML}</div>
+      <div class="cell kernel">${kernelHTML}</div>
+      <div class="cell action"><div class="small">${escapeHtml(r.action)}</div></div>
+      <div class="cell info">${infoHTML}</div>
+    `;
+
+    chart.appendChild(el);
+  });
+}
+
+function escapeHtml(s){ return String(s).replace(/[&<>\"]/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function filter(q){
+  if(!q) return rows.slice();
+  const qq = q.toLowerCase();
+  return rows.filter(r => {
+    return r.firmware.toLowerCase().includes(qq) ||
+      (r.userland && r.userland.join(' ').toLowerCase().includes(qq)) ||
+      (r.kernel && r.kernel.join(' ').toLowerCase().includes(qq)) ||
+      (r.info && r.info.toLowerCase().includes(qq)) ||
+      (r.action && r.action.toLowerCase().includes(qq));
+  });
+}
+
+search.addEventListener('input', (e)=>{ renderRows(filter(e.target.value)); });
+resetBtn.addEventListener('click', ()=>{ search.value=''; renderRows(rows); });
+
+/* music controls: same easy logic as your previous site */
+const audio = document.getElementById('bgAudio');
+const musicBtn = document.getElementById('musicBtn');
+let isPlaying = false; let mutedFallback = false;
+
+async function tryAutoplay(){
+  audio.loop = true; audio.volume = 0.9; audio.muted = false;
+  try{ await audio.play(); isPlaying = true; mutedFallback = false; updateMusicBtn(); }
+  catch(e){ try{ audio.muted=true; await audio.play(); isPlaying=true; mutedFallback=true; updateMusicBtn(); attachUnmuteOnFirstInteraction(); }catch(e2){ isPlaying=false; mutedFallback=false; updateMusicBtn(); }}
+}
+function updateMusicBtn(){ musicBtn.textContent = isPlaying ? (mutedFallback ? 'Playing (muted)' : 'Pause Music') : 'Play Music'; musicBtn.setAttribute('aria-pressed', String(isPlaying)); }
+function attachUnmuteOnFirstInteraction(){ function attempt(){ if(mutedFallback && audio.muted){ audio.muted=false; audio.play().catch(()=>{}); mutedFallback=false; updateMusicBtn(); } window.removeEventListener('pointerdown', attempt); window.removeEventListener('keydown', attempt); } window.addEventListener('pointerdown', attempt, {once:true}); window.addEventListener('keydown', attempt, {once:true}); }
+
+musicBtn.addEventListener('click', async ()=>{
+  if(isPlaying){ audio.pause(); isPlaying=false; mutedFallback=false; updateMusicBtn(); }
+  else{ audio.muted=false; try{ await audio.play(); isPlaying=true; mutedFallback=false; updateMusicBtn(); }catch(e){ try{ audio.muted=true; await audio.play(); isPlaying=true; mutedFallback=true; updateMusicBtn(); attachUnmuteOnFirstInteraction(); }catch(e2){ isPlaying=false; mutedFallback=false; updateMusicBtn(); } } }
+});
+tryAutoplay();
+
+/* initial render */
+createHeader(); renderRows(rows);
+</script>
+</body>
+</html>
