@@ -6,7 +6,6 @@
   <title>Hex → Base64 · Converter</title>
   <link rel="icon" type="image/png" href="./img/icon.png" />
   <style>
-    /* ---------- same glass theme ---------- */
     :root {
       --page-pad: 20px;
       --card-radius: 14px;
@@ -24,8 +23,6 @@
       margin:0;
       font-family:var(--font-family);
       color:var(--accent);
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
       background: none;
       position: relative;
     }
@@ -89,8 +86,6 @@
     .subtitle {
       font-size:13px;
       opacity:0.9;
-      display: flex;
-      flex-direction: column;
     }
 
     .controls {
@@ -141,7 +136,6 @@
       box-shadow: 0 0 6px rgba(240,196,25,0.6);
     }
 
-    /* editor panel */
     .editor-panel {
       background: rgba(0,0,0,0.3);
       border-radius: 14px;
@@ -149,38 +143,40 @@
       margin: 20px 0;
       border: 1px solid var(--glass-border);
     }
+
     .row {
       display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
       flex-wrap: wrap;
-      gap: 16px;
-      margin-bottom: 14px;
-      align-items: center;
     }
+
     .field {
-      flex: 1 1 250px;
+      flex: 1 1 0;
+      display:flex;
+      flex-direction:column;
     }
+
     .field label {
-      display: block;
       font-size: 12px;
       opacity: 0.8;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
-    .field input, .field select, .field textarea {
+
+    .field textarea {
       width: 100%;
-      padding: 8px;
-      border-radius: 8px;
+      min-height: 220px;
+      resize: vertical;
+      padding: 10px;
+      border-radius: 10px;
       border: 1px solid rgba(255,255,255,0.1);
       background: rgba(255,255,255,0.05);
       color: white;
       font-family: monospace;
-    }
-    .field select option { background: #222; }
-    .field textarea {
-      min-height: 120px;
-      resize: vertical;
-      font-family: monospace;
       font-size: 13px;
+      box-sizing: border-box;
     }
+
     .btn {
       background: rgba(255,255,255,0.1);
       border: 1px solid rgba(255,255,255,0.15);
@@ -189,35 +185,16 @@
       border-radius: 30px;
       cursor: pointer;
       font-weight: 600;
-      margin-right: 8px;
     }
-    .btn:hover {
-      background: rgba(255,255,255,0.2);
-    }
+    .btn:hover { background: rgba(255,255,255,0.2); }
+
     .btn-group {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
       margin: 20px 0;
     }
-    pre {
-      background: rgba(0,0,0,0.4);
-      padding: 12px;
-      border-radius: 8px;
-      overflow-x: auto;
-      font-size: 12px;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-    }
 
-    .hint {
-      font-size:12px; opacity:0.85; margin-top:10px; text-align:center;
-    }
-    .small-note {
-      font-size: 10px;
-      opacity: 0.7;
-      margin-top: 2px;
-    }
     .info-text {
       font-size: 11px;
       color: #aaccff;
@@ -226,7 +203,19 @@
       border-radius: 20px;
       margin-top: 6px;
     }
-    #fileInput { display: none; }
+
+    .hint {
+      font-size:12px;
+      opacity:0.85;
+      margin-top:10px;
+      text-align:center;
+    }
+
+    .small-note {
+      font-size: 10px;
+      opacity: 0.7;
+      margin-top: 2px;
+    }
 
     .toast {
       position: fixed;
@@ -241,31 +230,33 @@
       pointer-events: none;
       transition: opacity 180ms ease;
     }
-    .toast.show { opacity: 1; pointer-events: auto; }
+    .toast.show { opacity: 1; }
 
     .error { color: #ffd6d6; background: rgba(255,0,0,0.06); padding: 8px 10px; border-radius: 8px; }
 
+    #fileInput { display:none; }
+
+    @media (max-width: 900px) {
+      .row { flex-direction: column; }
+    }
   </style>
 </head>
 <body>
-  <div class="bg-fixed" aria-hidden="true"></div>
-  <div class="bg-overlay" aria-hidden="true"></div>
+  <div class="bg-fixed"></div>
+  <div class="bg-overlay"></div>
 
   <div class="wrap">
-    <div class="panel" role="main" aria-label="Hex to Base64 Converter">
+    <div class="panel" role="main">
       <header class="top">
         <div class="left-head">
           <div class="title">Hex → Base64 · Converter</div>
-          <div class="subtitle">
-            Paste hex data (with or without spaces) and convert it to Base64 quickly.
-            <span class="small-note">Owner: Mexrl · UI inspired by the original PS4 tools style</span>
-          </div>
+          <div class="subtitle">Paste hex data (with or without spaces) and convert it to Base64 quickly.</div>
         </div>
         <div class="controls">
           <button class="btn-ghost" onclick="history.back()">Back</button>
-          <div class="music-control" title="Play / Pause background music">
-            <div id="musicBtn" class="music-btn" aria-pressed="false" role="button">
-              <svg id="musicIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+          <div class="music-control">
+            <div id="musicBtn" class="music-btn">
+              <svg id="musicIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
             </div>
           </div>
         </div>
@@ -273,37 +264,35 @@
 
       <div class="editor-panel">
         <div class="row">
-          <div class="field" style="flex: 2 1 520px;">
-            <label for="hexInput">Hex input</label>
-            <textarea id="hexInput" placeholder="e.g. 48656c6c6f2c20776f726c6421 or 48 65 6c 6c 6f ..."></textarea>
-            <div class="small-note">You can upload a file containing hex, or paste it. Non-hex characters will be ignored (except whitespace).</div>
+          <div class="field">
+            <label>Hex input</label>
+            <textarea id="hexInput" placeholder="e.g. 48656c6c6f2c20776f726c6421"></textarea>
           </div>
-          <div class="field" style="flex: 1 1 320px;">
-            <label for="base64Output">Base64 output</label>
+          <div class="field">
+            <label>Base64 output</label>
             <textarea id="base64Output" readonly placeholder="Converted Base64 will appear here"></textarea>
-            <div style="margin-top:8px; display:flex; gap:8px;">
-              <button class="btn" id="copyBtn">📋 Copy</button>
-              <button class="btn" id="downloadBtn">⬇️ Download</button>
-              <button class="btn" id="clearBtn">✖ Clear</button>
-            </div>
           </div>
         </div>
 
         <div class="btn-group">
-          <button class="btn" id="convertBtn">⚡ Convert Hex → Base64</button>
+          <button class="btn" id="convertBtn">⚡ Convert</button>
+          <button class="btn" id="copyBtn">📋 Copy</button>
+          <button class="btn" id="downloadBtn">⬇️ Download</button>
+          <button class="btn" id="clearBtn">✖ Clear</button>
           <button class="btn" id="uploadBtn">📂 Upload hex file</button>
         </div>
+
         <input type="file" id="fileInput" accept="text/*" />
 
-        <div id="feedback" style="margin-top:12px;"></div>
+        <div id="feedback"></div>
 
         <div class="info-text">
-          ℹ️ Tip: If your input is long (large binary), the conversion may take a moment. The converter expects valid hex pairs; an odd number of hex characters will be treated as if a leading 0 was present for the last nibble.
+          ℹ️ The converter expects valid hex pairs. If the length is odd, it will auto-pad internally.
         </div>
       </div>
 
       <div class="hint">
-        Hex → Base64 converter · Owned by Mexrl
+        Hex → Base64 converter
         <div class="small-note">Thank you for visiting</div>
       </div>
     </div>
@@ -313,242 +302,105 @@
     <source src="../music/bg.mp3" type="audio/mpeg">
   </audio>
 
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="toast" class="toast"></div>
 
   <script>
-    (function() {
-      // ---------- MUSIC (same autoplay logic) ----------
-      const audio = document.getElementById('bgAudio');
-      const musicBtn = document.getElementById('musicBtn');
-      const musicIcon = document.getElementById('musicIcon');
-      let isPlaying = false;
-      let mutedFallback = false;
+    (function(){
+      const audio=document.getElementById('bgAudio');
+      const musicBtn=document.getElementById('musicBtn');
+      const musicIcon=document.getElementById('musicIcon');
+      let isPlaying=false,mutedFallback=false;
 
-      function updateMusicIcon() {
-        if (isPlaying) {
-          musicIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>';
-          musicBtn.setAttribute('aria-pressed','true');
-        } else {
-          musicIcon.innerHTML = '<path d="M8 5v14l11-7z"></path>';
-          musicBtn.setAttribute('aria-pressed','false');
-        }
-        if (isPlaying && mutedFallback) {
-          musicBtn.classList.add('muted');
-          musicBtn.title = 'Playing (muted). Interact to unmute / click to pause';
-        } else {
-          musicBtn.classList.remove('muted');
-          musicBtn.title = isPlaying ? 'Playing. Click to pause' : 'Paused. Click to play';
-        }
+      function updateMusicIcon(){
+        musicIcon.innerHTML=isPlaying
+          ?'<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>'
+          :'<path d="M8 5v14l11-7z"></path>';
       }
 
-      async function tryAutoplay() {
-        audio.loop = true;
-        audio.volume = 0.9;
-        audio.muted = false;
-        try {
-          await audio.play();
-          isPlaying = true;
-          mutedFallback = false;
-          updateMusicIcon();
-        } catch (e) {
-          try {
-            audio.muted = true;
-            await audio.play();
-            isPlaying = true;
-            mutedFallback = true;
-            updateMusicIcon();
-            attachUnmuteOnFirstInteraction();
-          } catch (e2) {
-            isPlaying = false;
-            mutedFallback = false;
-            updateMusicIcon();
-          }
-        }
+      async function tryAutoplay(){
+        audio.loop=true;audio.volume=0.9;
+        try{await audio.play();isPlaying=true;}
+        catch{try{audio.muted=true;await audio.play();isPlaying=true;mutedFallback=true;}catch{}}
+        updateMusicIcon();
       }
 
-      function attachUnmuteOnFirstInteraction() {
-        function attemptUnmute() {
-          if (mutedFallback && audio.muted) {
-            audio.muted = false;
-            audio.play().catch(() => {});
-            mutedFallback = false;
-            updateMusicIcon();
-          }
-          window.removeEventListener('pointerdown', attemptUnmute);
-          window.removeEventListener('keydown', attemptUnmute);
-        }
-        window.addEventListener('pointerdown', attemptUnmute, { once: true });
-        window.addEventListener('keydown', attemptUnmute, { once: true });
-      }
-
-      musicBtn.addEventListener('click', async () => {
-        if (isPlaying) {
-          audio.pause();
-          isPlaying = false;
-          mutedFallback = false;
-          updateMusicIcon();
-        } else {
-          audio.muted = false;
-          try {
-            await audio.play();
-            isPlaying = true;
-            mutedFallback = false;
-            updateMusicIcon();
-          } catch (e) {
-            try {
-              audio.muted = true;
-              await audio.play();
-              isPlaying = true;
-              mutedFallback = true;
-              updateMusicIcon();
-              attachUnmuteOnFirstInteraction();
-            } catch (e2) {
-              isPlaying = false;
-              mutedFallback = false;
-              updateMusicIcon();
-            }
-          }
-        }
-      });
-
-      window.addEventListener('pointerdown', () => {
-        if (isPlaying && mutedFallback && audio.muted) {
-          audio.muted = false;
-          mutedFallback = false;
-          updateMusicIcon();
-        }
-      });
-      window.addEventListener('keydown', () => {
-        if (isPlaying && mutedFallback && audio.muted) {
-          audio.muted = false;
-          mutedFallback = false;
-          updateMusicIcon();
-        }
+      musicBtn.addEventListener('click',async()=>{
+        if(isPlaying){audio.pause();isPlaying=false;mutedFallback=false;}
+        else{try{audio.muted=false;await audio.play();isPlaying=true;mutedFallback=false;}catch{}}
+        updateMusicIcon();
       });
 
       tryAutoplay();
 
-      // ---------- Converter logic ----------
-      const hexInput = document.getElementById('hexInput');
-      const base64Output = document.getElementById('base64Output');
-      const convertBtn = document.getElementById('convertBtn');
-      const uploadBtn = document.getElementById('uploadBtn');
-      const fileInput = document.getElementById('fileInput');
-      const copyBtn = document.getElementById('copyBtn');
-      const downloadBtn = document.getElementById('downloadBtn');
-      const clearBtn = document.getElementById('clearBtn');
-      const feedback = document.getElementById('feedback');
-      const toast = document.getElementById('toast');
+      const hexInput=document.getElementById('hexInput');
+      const base64Output=document.getElementById('base64Output');
+      const convertBtn=document.getElementById('convertBtn');
+      const copyBtn=document.getElementById('copyBtn');
+      const downloadBtn=document.getElementById('downloadBtn');
+      const clearBtn=document.getElementById('clearBtn');
+      const uploadBtn=document.getElementById('uploadBtn');
+      const fileInput=document.getElementById('fileInput');
+      const feedback=document.getElementById('feedback');
+      const toast=document.getElementById('toast');
 
-      function showToast(msg, timeout = 1800) {
-        toast.textContent = msg;
-        toast.classList.add('show');
-        clearTimeout(toast._t);
-        toast._t = setTimeout(() => toast.classList.remove('show'), timeout);
-      }
+      function showToast(msg){toast.textContent=msg;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1500);}
 
-      function sanitizeHex(s) {
-        // keep only hex chars
-        return s.replace(/[^0-9a-fA-F]/g, '');
-      }
+      function sanitizeHex(s){return s.replace(/[^0-9a-fA-F]/g,'');}
 
-      function hexToBase64(hex) {
-        const clean = sanitizeHex(hex);
-        if (clean.length === 0) return '';
-        // If odd length, treat as if leading 0 for the last nibble (e.g. 'a' -> '0a')
-        const padded = clean.length % 2 === 1 ? '0' + clean : clean;
-        const bytes = new Uint8Array(padded.length / 2);
-        for (let i = 0; i < padded.length; i += 2) {
-          const byte = parseInt(padded.substr(i,2), 16);
-          if (Number.isNaN(byte)) throw new Error('Invalid hex sequence');
-          bytes[i/2] = byte;
+      function hexToBase64(hex){
+        const clean=sanitizeHex(hex);
+        if(!clean) return '';
+        const padded=clean.length%2?'0'+clean:clean;
+        const bytes=new Uint8Array(padded.length/2);
+        for(let i=0;i<padded.length;i+=2){
+          const byte=parseInt(padded.substr(i,2),16);
+          if(Number.isNaN(byte)) throw new Error('Invalid hex');
+          bytes[i/2]=byte;
         }
-        // convert bytes to binary string then to base64
-        let binary = '';
-        const chunk = 0x8000;
-        for (let i = 0; i < bytes.length; i += chunk) {
-          binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
-        }
+        let binary='';
+        const chunk=0x8000;
+        for(let i=0;i<bytes.length;i+=chunk)
+          binary+=String.fromCharCode.apply(null,bytes.subarray(i,i+chunk));
         return btoa(binary);
       }
 
-      function setFeedback(msg, isError=false) {
-        feedback.innerHTML = isError ? '<div class="error">' + msg + '</div>' : '<div>' + msg + '</div>';
-      }
-
-      convertBtn.addEventListener('click', () => {
-        try {
-          const hex = hexInput.value || '';
-          const out = hexToBase64(hex);
-          base64Output.value = out;
-          if (out.length) {
-            setFeedback('Converted ' + Math.ceil(sanitizeHex(hex).length/2) + ' bytes.');
-            showToast('Converted');
-          } else {
-            setFeedback('No hex input detected.');
-          }
-        } catch (e) {
-          setFeedback('Conversion failed: ' + e.message, true);
-        }
+      convertBtn.addEventListener('click',()=>{
+        try{
+          const out=hexToBase64(hexInput.value);
+          base64Output.value=out;
+          feedback.textContent=out?'Converted successfully.':'No hex input detected.';
+          if(out) showToast('Converted');
+        }catch(e){feedback.innerHTML='<div class="error">'+e.message+'</div>';}
       });
 
-      clearBtn.addEventListener('click', () => {
-        hexInput.value = '';
-        base64Output.value = '';
-        feedback.innerHTML = '';
+      copyBtn.addEventListener('click',async()=>{
+        if(!base64Output.value) return showToast('Nothing to copy');
+        await navigator.clipboard.writeText(base64Output.value);
+        showToast('Copied');
       });
 
-      copyBtn.addEventListener('click', async () => {
-        const text = base64Output.value || '';
-        if (!text) { showToast('Nothing to copy'); return; }
-        try {
-          await navigator.clipboard.writeText(text);
-          showToast('Copied to clipboard');
-        } catch (e) {
-          // fallback
-          const ta = document.createElement('textarea');
-          ta.value = text;
-          document.body.appendChild(ta);
-          ta.select();
-          try { document.execCommand('copy'); showToast('Copied to clipboard'); } catch (e2) { showToast('Copy failed'); }
-          ta.remove();
-        }
-      });
-
-      downloadBtn.addEventListener('click', () => {
-        const text = base64Output.value || '';
-        if (!text) { showToast('Nothing to download'); return; }
-        const blob = new Blob([text], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'output.base64.txt';
-        a.click();
+      downloadBtn.addEventListener('click',()=>{
+        if(!base64Output.value) return showToast('Nothing to download');
+        const blob=new Blob([base64Output.value],{type:'text/plain'});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');
+        a.href=url;a.download='output.base64.txt';a.click();
         URL.revokeObjectURL(url);
       });
 
-      uploadBtn.addEventListener('click', () => fileInput.click());
+      clearBtn.addEventListener('click',()=>{
+        hexInput.value='';base64Output.value='';feedback.textContent='';
+      });
 
-      fileInput.addEventListener('change', (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const txt = String(ev.target.result || '');
-          hexInput.value = txt.trim();
-          showToast('Loaded file');
-        };
+      uploadBtn.addEventListener('click',()=>fileInput.click());
+      fileInput.addEventListener('change',e=>{
+        const file=e.target.files[0];
+        if(!file) return;
+        const reader=new FileReader();
+        reader.onload=ev=>{hexInput.value=String(ev.target.result||'').trim();showToast('Loaded file');};
         reader.readAsText(file);
-        fileInput.value = '';
+        fileInput.value='';
       });
-
-      // Allow Ctrl+Enter to convert quickly
-      hexInput.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-          convertBtn.click();
-        }
-      });
-
     })();
   </script>
 </body>
