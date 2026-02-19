@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>The.. Main Menu</title>
+<link rel="icon" type="image/png" href="./img/icon.png" />
+<style>
+  :root{
+    --gap: 18px;
+    --btn-w: 160px;
+    --btn-h: 46px;
+    --btn-radius: 12px;
+    --glass-bg: rgba(255,255,255,0.06);
+    --accent: #ffffff;
+    --shadow-color: rgba(0,0,0,0.45);
+    --font-family: "Segoe UI", Roboto, system-ui, -apple-system, "Helvetica Neue", Arial;
+  }
+
+  html,body{
+    height:100%;
+    margin:0;
+    font-family:var(--font-family);
+    color:var(--accent);
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    background-color:#000;
+  }
+
+  /* Background image now handled by .bg-fixed (below) */
+  body{
+    background: none; /* remove any direct background */
+  }
+
+  /* FIXED BACKGROUND LAYER – stays glued to viewport */
+  .bg-fixed {
+    position: fixed;
+    inset: 0;
+    background-image: url('./img/Baek.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: -2;
+  }
+
+  /* overlay so UI is readable – also fixed, above background */
+  .bg-overlay{
+    position:fixed;
+    inset:0;
+    background: linear-gradient(rgba(0,0,0,0.14), rgba(0,0,0,0.28));
+    pointer-events:none;
+    z-index: -1;
+  }
+
+  .menu-wrap{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:40px 20px;
+    box-sizing:border-box;
+    position: relative;
+    z-index: 1; /* ensure content is above fixed layers */
+  }
+
+  .menu-card{
+    width: min(980px, 95%);
+    max-width:1200px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.08));
+    border-radius:18px;
+    padding:28px;
+    box-shadow: 0 8px 30px var(--shadow-color);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,255,255,0.04);
+    position:relative;
+  }
+
+  header.menu-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:18px;
+  }
+  header .title{
+    font-size:20px;
+    font-weight:600;
+    letter-spacing:0.6px;
+  }
+  header .subtitle{
+    font-size:13px;
+    opacity:0.85;
+  }
+
+  .rows{
+    display:flex;
+    flex-direction:column;
+    gap:var(--gap);
+  }
+
+  /* Each row centers its children; 1 or 2 buttons will be centered automatically */
+  .row{
+    display:flex;
+    gap:14px;
+    justify-content:center;
+  }
+
+  .menu-btn{
+    width: var(--btn-w);
+    height: var(--btn-h);
+    min-width:120px;
+    padding:8px 14px;
+    border-radius: var(--btn-radius);
+    border: 1px solid rgba(255,255,255,0.06);
+    background: var(--glass-bg);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--accent);
+    text-decoration:none;
+    font-weight:600;
+    font-size:14px;
+    cursor:pointer;
+    user-select:none;
+    transition: transform 160ms cubic-bezier(.2,.9,.3,1), box-shadow 160ms, background 160ms;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+    position:relative;
+    overflow:hidden;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .menu-btn:hover{
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 10px 26px rgba(0,0,0,0.45);
+  }
+
+  .menu-btn:active{
+    transform: translateY(2px) scale(0.98);
+  }
+
+  .menu-btn::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00));
+    pointer-events:none;
+    mix-blend-mode: overlay;
+  }
+
+  @media (max-width:560px){
+    :root{ --btn-w: 130px; --btn-h:42px; --gap:12px; }
+    .menu-card{ padding:18px; border-radius:12px; }
+    header .title{ font-size:17px; }
+  }
+
+  .music-control{
+    display:inline-flex;
+    gap:8px;
+    align-items:center;
+    position:relative;
+  }
+  .music-btn{
+    width:40px;
+    height:40px;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    transition: transform 140ms;
+    position:relative;
+  }
+  .music-btn:active{ transform:scale(0.95); }
+  .music-btn svg{ width:18px; height:18px; fill:currentColor; color:var(--accent); opacity:0.95; }
+
+  /* when playing but muted fallback is active, show small yellow dot on the control */
+  .music-btn.muted::after{
+    content: '';
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #f0c419;
+    box-shadow: 0 0 6px rgba(240,196,25,0.6);
+  }
+
+  /* small helper text when muted fallback is active */
+  .unmute-hint{
+    font-size:12px;
+    margin-left:10px;
+    opacity:0.92;
+  }
+
+  .hint{ font-size:12px; opacity:0.8; margin-top:10px; text-align:center; }
+</style>
+</head>
+<body>
+  <!-- Fixed background layer – stays glued to viewport -->
+  <div class="bg-fixed" aria-hidden="true"></div>
+  <!-- Fixed overlay for contrast -->
+  <div class="bg-overlay" aria-hidden="true"></div>
+
+  <div class="menu-wrap">
+    <div class="menu-card" role="region" aria-label="Main menu">
+      <header class="menu-head">
+        <div>
+          <div class="title">Main Menu</div>
+          <div class="subtitle">Click a button to open a script or follow a link</div>
+        </div>
+        <div class="music-control" aria-hidden="false" title="Play / Pause background music">
+          <div id="musicBtn" class="music-btn" aria-pressed="false" role="button">
+            <svg id="musicIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+          </div>
+          <div id="unmuteHint" class="unmute-hint" aria-hidden="true" style="display:none;">Playing (muted) — interact to unmute</div>
+        </div>
+      </header>
+
+      <main>
+        <div id="rows" class="rows" aria-live="polite"></div>
+        <div class="hint">Owned by Mexrl</div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Background audio (relative path) -->
+  <audio id="bgAudio" loop preload="auto">
+    <source src="./music/bg.mp3" type="audio/mpeg">
+    <!-- fallback -->
+  </audio>
+
+<script>
+
+/* Buttons data */
+const buttonsData = [
+  { label: 'Ps4 Unicode', script: 'unicode.html', title: 'Open ./scripts/unicode.html' },
+  { label: 'online.js Editor', script: 'user-onlineJS-editor.html', title: 'Open ./scripts/user-onlineJS-editor.html' },
+  { label: 'The PS4 Save DB', script: 'ps4-save-database.html', title: 'Open ./scripts/ps4-save-database.html' }
+];
+
+
+const rowsContainer = document.getElementById('rows');
+function buildMenu(items){
+  rowsContainer.innerHTML = '';
+  for(let i=0; i<items.length; i += 3){
+    const group = items.slice(i, i+3);
+    const row = document.createElement('div');
+    row.className = 'row';
+    group.forEach(btn => {
+      const el = document.createElement('button');
+      el.className = 'menu-btn';
+      el.type = 'button';
+      el.textContent = btn.label || 'Button';
+      if(btn.title) el.title = btn.title;
+      if(btn.link) el.dataset.link = btn.link;
+      if(btn.script) el.dataset.script = btn.script;
+      el.addEventListener('click', onMenuClick);
+      el.addEventListener('keydown', (e)=>{
+        if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
+      });
+      row.appendChild(el);
+    });
+    rowsContainer.appendChild(row);
+  }
+  if(items.length === 0){
+    const placeholder = document.createElement('div');
+    placeholder.style.textAlign = 'center';
+    placeholder.style.opacity = '0.75';
+    placeholder.style.padding = '22px';
+    placeholder.textContent = 'No buttons defined.';
+    rowsContainer.appendChild(placeholder);
+  }
+}
+
+function onMenuClick(e){
+  const btn = e.currentTarget;
+  const link = btn.dataset.link;
+  const script = btn.dataset.script;
+
+  if(link){
+    window.location.href = link;
+    return;
+  }
+  if(script){
+    let target = script.trim();
+    if(!target.includes('/') && !target.includes('.')) target = target + '.html';
+    if(target.startsWith('./') || target.startsWith('/')){
+      window.location.href = target;
+    } else {
+      window.location.href = './scripts/' + target;
+    }
+    return;
+  }
+  console.warn('Button has no action defined.');
+}
+buildMenu(buttonsData);
+
+/* Music autoplay + UI logic */
+const audio = document.getElementById('bgAudio');
+const musicBtn = document.getElementById('musicBtn');
+const musicIcon = document.getElementById('musicIcon');
+const unmuteHint = document.getElementById('unmuteHint');
+
+let isPlaying = false;
+let mutedFallback = false; // true when autoplay succeeded only muted
+
+function updateMusicIcon(){
+  // if playing => show pause icon, else show play icon
+  if(isPlaying){
+    // pause icon
+    musicIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>';
+    musicBtn.setAttribute('aria-pressed','true');
+  } else {
+    // play icon
+    musicIcon.innerHTML = '<path d="M8 5v14l11-7z"></path>';
+    musicBtn.setAttribute('aria-pressed','false');
+  }
+
+  // if playing but muted fallback active, add visual cue
+  if(isPlaying && mutedFallback){
+    musicBtn.classList.add('muted');
+    unmuteHint.style.display = 'block';
+    unmuteHint.setAttribute('aria-hidden','false');
+  } else {
+    musicBtn.classList.remove('muted');
+    unmuteHint.style.display = 'none';
+    unmuteHint.setAttribute('aria-hidden','true');
+  }
+
+  // update accessible title
+  if(isPlaying){
+    if(mutedFallback){
+      musicBtn.title = 'Playing (muted). Click to pause or interact to unmute';
+    } else {
+      musicBtn.title = 'Playing. Click to pause';
+    }
+  } else {
+    musicBtn.title = 'Paused. Click to play';
+  }
+}
+
+// Attempt autoplay unmuted; if blocked, try muted fallback
+async function tryAutoplay(){
+  // ensure loop & volume
+  audio.loop = true;
+  audio.volume = 0.9;
+
+  // first try unmuted autoplay
+  audio.muted = false;
+  try {
+    await audio.play();
+    isPlaying = true;
+    mutedFallback = false;
+    updateMusicIcon();
+    // no need to attach interaction unmute handlers
+  } catch (e) {
+    // unmuted autoplay blocked -> try muted autoplay so page is "playing"
+    try {
+      audio.muted = true;
+      await audio.play();
+      isPlaying = true;
+      mutedFallback = true;
+      updateMusicIcon();
+      // attach first-interaction handler to unmute when the user interacts
+      attachUnmuteOnFirstInteraction();
+    } catch (e2) {
+      // even muted autoplay blocked (rare). leave paused and let user start.
+      isPlaying = false;
+      mutedFallback = false;
+      updateMusicIcon();
+    }
+  }
+}
+
+function attachUnmuteOnFirstInteraction(){
+  function attemptUnmuteOnce(){
+    if(mutedFallback && audio.muted){
+      // try to unmute and keep playing
+      audio.muted = false;
+      // some browsers may require calling play again — try it
+      audio.play().catch(()=>{ /* ignore */ });
+      mutedFallback = false;
+      updateMusicIcon();
+    }
+    window.removeEventListener('pointerdown', attemptUnmuteOnce);
+    window.removeEventListener('keydown', attemptUnmuteOnce);
+  }
+  window.addEventListener('pointerdown', attemptUnmuteOnce, { once: true });
+  window.addEventListener('keydown', attemptUnmuteOnce, { once: true });
+}
+
+// Start autoplay attempts as soon as script runs
+tryAutoplay();
+
+/* Music button behavior (manual toggle) */
+musicBtn.addEventListener('click', async () => {
+  if(isPlaying){
+    // pause
+    audio.pause();
+    isPlaying = false;
+    mutedFallback = false; // clear fallback state on user action
+    updateMusicIcon();
+  } else {
+    // try to play unmuted first
+    audio.muted = false;
+    try {
+      await audio.play();
+      isPlaying = true;
+      mutedFallback = false;
+      updateMusicIcon();
+    } catch (e) {
+      // unmuted play blocked — try muted play
+      try {
+        audio.muted = true;
+        await audio.play();
+        isPlaying = true;
+        mutedFallback = true;
+        updateMusicIcon();
+        attachUnmuteOnFirstInteraction();
+      } catch (e2) {
+        // can't play — stay paused
+        isPlaying = false;
+        mutedFallback = false;
+        updateMusicIcon();
+      }
+    }
+  }
+});
+
+/* If the user interacts anywhere and we are playing muted, we'll unmute automatically (UX friendly) */
+window.addEventListener('pointerdown', () => {
+  if(isPlaying && mutedFallback && audio.muted){
+    audio.muted = false;
+    mutedFallback = false;
+    updateMusicIcon();
+  }
+}, { once: false });
+
+window.addEventListener('keydown', () => {
+  if(isPlaying && mutedFallback && audio.muted){
+    audio.muted = false;
+    mutedFallback = false;
+    updateMusicIcon();
+  }
+}, { once: false });
+
+</script>
+</body>
+</html>
