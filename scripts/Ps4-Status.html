@@ -102,12 +102,7 @@
   <audio id="bgAudio" loop preload="auto"><source src="../music/bg.mp3" type="audio/mpeg"></audio>
 
 <script>
-/* ==========================
-   DATA: add / update rows here
-   Each item should have: firmware, userland (array), kernel (array), action (string), info (string)
-   Example:
-   rows.push({ firmware: 'Example', userland: ['Thing'], kernel: ['Thing2'], action: 'Stay', info: 'Some details' });
-   ========================== */
+// whatever
 const rows = [
   {
     firmware: 'Older than 5.05',
@@ -118,56 +113,56 @@ const rows = [
   },
   {
     firmware: '5.05/5.07',
-    userland: ['CVE-2016-1859 (Webkit)', 'CVE-2017-7005 (Webkit, used with kernel exploit)', 'Lua loader (theoretical)', 'Mast1c0re (theoretical)', 'BD-JB (theoretical)'],
+    userland: ['CVE-2016-1859 (Webkit)', 'CVE-2017-7005 (Webkit, used with kernel exploit)', 'Lua loader (theoretical)', 'Mast1c0re (theoretical)', 'BD-JB (theoretical)', 'PsVue (theoretical)'],
     kernel: ['BPF Race Condition (Original)', 'PPPwn (Theoretical)', 'Lapse (Theoretical)', 'Poopsploit (Theoretical)'],
     action: 'Stay on current firmware',
     info: 'Considered the gold standard firmware because of its original exploits having stability and success rate. However, most games will require backports.'
   },
   {
     firmware: '5.50 to 6.71',
-    userland: ['bad_hoist (Webkit)', 'CVE-2021-30849 (theoretical)', 'CVE-2021-30858 (theoretical)', 'buildBubbleTree (theoretical)', 'psFree (theoretical)', 'Save file exploits (theoretical)', 'Mast1c0re (theoretical)', 'BD-JB (theoretical)'],
+    userland: ['bad_hoist (Webkit)', 'CVE-2021-30849 (theoretical)', 'CVE-2021-30858 (theoretical)', 'buildBubbleTree (theoretical)', 'psFree (theoretical)', 'Save file exploits (theoretical)', 'Mast1c0re (theoretical)', 'BD-JB (theoretical)', 'PsVue (theoretical)'],
     kernel: ['CVE-2020-7457 (Implemented on 6.72)', 'CVE-2020-9892 (Theoretical)', 'PPPwn (Theoretical)', 'Poopsploit (Theoretical)'],
     action: 'Update to 6.72 or 9.00 and not above',
     info: 'This firmware range has exploits that are highly unstable. As such, it\'s easier to just update to 6.72 or 9.00.'
   },
   {
     firmware: '6.72',
-    userland: ['- (see adjacent rows)'],
+    userland: ['Same as 5.50 to 6.71 list'],
     kernel: ['Original exploits optimized over time; good success rate and stability. See Standard Jailbreak instructions.'],
     action: 'Either stay, or update to 9.00 and not above',
     info: 'Original exploits were optimized overtime to have good success rate and stability. 9.00 - 9.60 may still be desired due to more game/homebrew support.'
   },
   {
     firmware: '7.00, 7.01, 7.02',
-    userland: ['buildBubbleTree (implemented)', 'psFree', 'Save file exploit (theoretical)', 'Mast1c0re (theoretical)', 'BD-JB (theoretical)'],
+    userland: ['buildBubbleTree (implemented)', 'PsVue', 'psFree', 'Save file exploit (theoretical)', 'Mast1c0re (theoretical)', 'BD-JB (theoretical)'],
     kernel: ['CVE-2020-9892', 'PPPwn', 'Lapse', 'Poopsploit (Theoretical)'],
     action: 'Stay or update to 9.00 (9.00 often preferred)',
     info: '7.XX firmwares do have native webkit/kernel exploits. Recommended exploit is PSFree with Lapse.'
   },
   {
     firmware: '7.50, 7.51, 7.55',
-    userland: ['See 7.00-7.02 list'],
-    kernel: ['See 7.00-7.02 list'],
+    userland: ['Same as 7.00-7.02 list'],
+    kernel: ['Same as 7.00-7.02 list'],
     action: 'Stay or update to 9.00',
     info: 'Similar to other 7.XX firmwares.'
   },
   {
     firmware: '8.00 to 8.52',
-    userland: ['psFree', 'Save file exploit (theoretical)', 'Mast1c0re (theoretical)', 'BD-JB (theoretical)'],
+    userland: ['PsVue', 'psFree', 'Save file exploit (theoretical)', 'Mast1c0re (theoretical)', 'BD-JB (theoretical)'],
     kernel: ['PPPwn', 'Lapse', 'Poopsploit (Theoretical)'],
     action: 'Recommended: PSFree with Lapse',
     info: '8.xx has PPPwn, which is not recommended. PSFree with Lapse is preferred.'
   },
   {
     firmware: '9.00',
-    userland: ['CVE-2021-30858 (used w/ pOObs4)', 'psFree', 'Lua Loader', 'Netflix exploit', 'Mast1c0re', 'BD-JB'],
+    userland: ['CVE-2021-30858 (used w/ pOObs4)', 'PsVue', 'psFree', 'Lua Loader', 'Netflix exploit', 'Mast1c0re', 'BD-JB'],
     kernel: ['exfathax (pOObs4)', 'PPPwn', 'Lapse', 'Poopsploit'],
     action: 'Stay on current firmware',
     info: '9.00 can be seen as another gold standard version with high stability. PPPwn not recommended on 9.00.'
   },
   {
     firmware: '9.03 to 9.60',
-    userland: ['CVE-2021-30858 (theoretical on 9.03 & 9.04)', 'psFree', 'Lua Loader', 'YARPE (Ren\'Py saves)', 'Netflix exploit', 'Mast1c0re', 'BD-JB'],
+    userland: ['CVE-2021-30858 (theoretical on 9.03 & 9.04)', 'PsVue', 'psFree', 'Lua Loader', 'YARPE (Ren\'Py saves)', 'Netflix exploit', 'Mast1c0re', 'BD-JB'],
     kernel: ['PPPwn', 'Lapse', 'Poopsploit'],
     action: 'Either stay, or update to 9.60 and not above',
     info: 'PPPwn is not recommended on this firmware range. PSFree with Lapse recommended.'
@@ -175,64 +170,69 @@ const rows = [
   {
     firmware: '10.00 to 10.71',
     userland: ['Lua Loader', 'YARPE', 'Netflix-N-Hack', 'Mast1c0re', 'BD-JB'],
-    kernel: [],
+    kernel: ['Lapse', 'Poopsploit'],
     action: 'Either stay, or update to 11.00 and not above',
     info: 'These versions don\'t have a known Webkit exploit at the time of writing, but can still use PPPwn or BD-JB/Lua/Netflix.'
   },
   {
     firmware: '11.00',
-    userland: [],
-    kernel: [],
+    userland: ['PsVue', 'Lua Loader', 'YARPE', 'Netflix-N-Hack', 'Mast1c0re', 'BD-JB'],
+    kernel: ['Lapse', 'Poopsploit'],
     action: 'Stay on current firmware',
     info: 'Last firmware that has support for PPPwn. Recommended exploit: BD-JB if available.'
   },
   {
     firmware: '11.02 to 11.52',
-    userland: ['Lapse', 'Poopsploit'],
+    userland: ['PsVue', 'Lua Loader', 'YARPE', 'Netflix-N-Hack', 'Mast1c0re', 'BD-JB'],
     kernel: ['Lapse', 'Poopsploit'],
     action: 'Either stay, or update to 12.02 and not above',
     info: 'BD-J is easiest; Lua-compatible Artemis games and Ren\'Py games are promising.'
   },
   {
     firmware: '12.00',
-    userland: [],
+    userland: ['PsVue', 'Lua Loader', 'YARPE', 'Netflix-N-Hack', 'Mast1c0re', 'BD-JB'],
     kernel: [],
     action: 'Either stay, or update to 12.02',
     info: 'As of 12.00 the landscape is similar to nearby firmwares.'
   },
   {
     firmware: '12.02',
-    userland: [],
+    userland: ['PsVue', 'Lua Loader', 'YARPE', 'Netflix-N-Hack', 'Mast1c0re', 'BD-JB'],
     kernel: [],
     action: 'Stay on current firmware',
     info: 'Stable choice at time of writing.'
   },
   {
     firmware: '12.50, 12.52',
-    userland: ['Poopsploit'],
-    kernel: ['Poopsploit'],
+    userland: ['PsVue', 'BD-JB', 'Lua Loader', 'YARPE', 'Mast1c0re'],
+    kernel: ['Poopsploit', 'Poopsploit Js'],
     action: 'BD-JB implementation available; proceed with caution',
     info: 'Poopsploit is currently the kernel exploit for these versions.'
   },
   {
     firmware: '13.00',
-    userland: ['Lua Loader', 'YARPE', 'Mast1c0re (theoretical)'],
-    kernel: [],
+    userland: ['PsVue', 'Lua Loader', 'YARPE', 'Mast1c0re (theoretical)', 'BD-JB-1302'],
+    kernel: ['Poopsploit', 'Poopsploit Js'],
     action: 'While a kernel exploit exists, there\'s no public entry point implemented',
     info: 'No public entry point compatible with current libraries; Mast1c0re possible but limited.'
   },
   {
-    firmware: '13.02 or higher',
-    userland: [],
+    firmware: '13.02',
+    userland: ['PsVue', 'BD-JB-1302'],
+    kernel: [],
+    action: 'Sell console, or stay',
+    info: 'No kernel exploits past 13.00; wait for future developments.'
+  },
+  {
+    firmware: '13.04',
+    userland: ['PsVue'],
     kernel: [],
     action: 'Sell console, or stay',
     info: 'No kernel exploits past 13.00; wait for future developments.'
   }
 ];
 
-/* ==========================
-   RENDERING - no CSS edits needed to add content
-   ========================== */
+
 const chart = document.getElementById('chartContainer');
 const search = document.getElementById('search');
 const resetBtn = document.getElementById('reset');
