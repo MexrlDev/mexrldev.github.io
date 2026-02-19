@@ -3,163 +3,79 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>The.. Main Menu</title>
+<title>The PS4 Save database</title>
 <link rel="icon" type="image/png" href="./img/icon.png" />
 <style>
+  /* Theme variables */
   :root{
-    --gap: 18px;
-    --btn-w: 160px;
-    --btn-h: 46px;
-    --btn-radius: 12px;
-    --glass-bg: rgba(255,255,255,0.06);
+    --page-pad: 20px;
+    --card-radius: 14px;
+    --glass-bg: rgba(255,255,255,0.04);
+    --glass-border: rgba(255,255,255,0.06);
     --accent: #ffffff;
-    --shadow-color: rgba(0,0,0,0.45);
+    --muted: rgba(255,255,255,0.7);
+    --shadow: rgba(0,0,0,0.35);
+    --gap: 14px;
     --font-family: "Segoe UI", Roboto, system-ui, -apple-system, "Helvetica Neue", Arial;
   }
 
-  html,body{
-    height:100%;
-    margin:0;
-    font-family:var(--font-family);
-    color:var(--accent);
-    -webkit-font-smoothing:antialiased;
-    -moz-osx-font-smoothing:grayscale;
-    background-color:#000;
-  }
+  html,body{height:100%;margin:0;font-family:var(--font-family);-webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;color:var(--accent);background:none;position:relative;}
 
-  /* Background image now handled by .bg-fixed (below) */
-  body{
-    background: none; /* remove any direct background */
-  }
-
-  /* FIXED BACKGROUND LAYER – stays glued to viewport */
-  .bg-fixed {
+  /* FIXED BACKGROUND (same style as your other page) */
+  .bg-fixed{
     position: fixed;
     inset: 0;
-    background-image: url('./img/Baek.png');
+    background-image: url('../img/Baek.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     z-index: -2;
   }
-
-  /* overlay so UI is readable – also fixed, above background */
   .bg-overlay{
     position:fixed;
     inset:0;
-    background: linear-gradient(rgba(0,0,0,0.14), rgba(0,0,0,0.28));
+    background: linear-gradient(rgba(0,0,0,0.12), rgba(0,0,0,0.28));
     pointer-events:none;
     z-index: -1;
   }
 
-  .menu-wrap{
-    min-height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:40px 20px;
-    box-sizing:border-box;
-    position: relative;
-    z-index: 1; /* ensure content is above fixed layers */
-  }
+  .wrap{ min-height:100vh; display:flex; align-items:flex-start; justify-content:center; padding:36px 18px; box-sizing:border-box; position:relative; z-index:1; }
 
-  .menu-card{
-    width: min(980px, 95%);
+  .panel{
+    width: min(1100px,96%);
     max-width:1200px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.08));
+    margin:12px 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));
     border-radius:18px;
-    padding:28px;
-    box-shadow: 0 8px 30px var(--shadow-color);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    border: 1px solid rgba(255,255,255,0.04);
-    position:relative;
-  }
-
-  header.menu-head{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    margin-bottom:18px;
-  }
-  header .title{
-    font-size:20px;
-    font-weight:600;
-    letter-spacing:0.6px;
-  }
-  header .subtitle{
-    font-size:13px;
-    opacity:0.85;
-  }
-
-  .rows{
-    display:flex;
-    flex-direction:column;
-    gap:var(--gap);
-  }
-
-  /* Each row centers its children; 1 or 2 buttons will be centered automatically */
-  .row{
-    display:flex;
-    gap:14px;
-    justify-content:center;
-  }
-
-  .menu-btn{
-    width: var(--btn-w);
-    height: var(--btn-h);
-    min-width:120px;
-    padding:8px 14px;
-    border-radius: var(--btn-radius);
-    border: 1px solid rgba(255,255,255,0.06);
-    background: var(--glass-bg);
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    color:var(--accent);
-    text-decoration:none;
-    font-weight:600;
-    font-size:14px;
-    cursor:pointer;
-    user-select:none;
-    transition: transform 160ms cubic-bezier(.2,.9,.3,1), box-shadow 160ms, background 160ms;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
-    position:relative;
-    overflow:hidden;
+    padding:var(--page-pad);
+    box-shadow: 0 10px 40px var(--shadow);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+    border:1px solid var(--glass-border);
   }
 
-  .menu-btn:hover{
-    transform: translateY(-4px) scale(1.05);
-    box-shadow: 0 10px 26px rgba(0,0,0,0.45);
-  }
+  header.top{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+  .left-head{ display:flex; flex-direction:column; }
+  .title{ font-size:20px; font-weight:600; }
+  .subtitle{ font-size:13px; opacity:0.9; color:var(--muted); }
 
-  .menu-btn:active{
-    transform: translateY(2px) scale(0.98);
+  .controls{ display:flex; gap:8px; align-items:center; }
+  .btn-ghost{
+    padding:8px 12px;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+    color:var(--accent);
+    cursor:pointer;
+    font-weight:600;
   }
+  .btn-ghost:active{ transform: translateY(1px); }
 
-  .menu-btn::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00));
-    pointer-events:none;
-    mix-blend-mode: overlay;
-  }
-
-  @media (max-width:560px){
-    :root{ --btn-w: 130px; --btn-h:42px; --gap:12px; }
-    .menu-card{ padding:18px; border-radius:12px; }
-    header .title{ font-size:17px; }
-  }
-
+  /* music button (copied from your theme) */
   .music-control{
     display:inline-flex;
     gap:8px;
     align-items:center;
-    position:relative;
   }
   .music-btn{
     width:40px;
@@ -176,8 +92,6 @@
   }
   .music-btn:active{ transform:scale(0.95); }
   .music-btn svg{ width:18px; height:18px; fill:currentColor; color:var(--accent); opacity:0.95; }
-
-  /* when playing but muted fallback is active, show small yellow dot on the control */
   .music-btn.muted::after{
     content: '';
     position: absolute;
@@ -190,186 +104,275 @@
     box-shadow: 0 0 6px rgba(240,196,25,0.6);
   }
 
-  /* small helper text when muted fallback is active */
-  .unmute-hint{
-    font-size:12px;
-    margin-left:10px;
-    opacity:0.92;
+  /* search */
+  .search-row{ display:flex; gap:12px; align-items:center; margin-bottom:12px; }
+  .search{ flex:1 1 320px; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); color:var(--accent); outline:none; font-size:14px; box-shadow: 0 6px 18px rgba(0,0,0,0.18) inset; }
+  .search::placeholder{ color: rgba(255,255,255,0.6); }
+
+  /* saves list */
+  .list{ display:flex; flex-direction:column; gap:var(--gap); margin-top:6px; }
+  .save-card{
+    display:flex;
+    width:100%;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:8px;
+    border-radius:12px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(0,0,0,0.03));
+    border:1px solid var(--glass-border);
+    box-shadow: 0 8px 22px rgba(0,0,0,0.22);
   }
 
-  .hint{ font-size:12px; opacity:0.8; margin-top:10px; text-align:center; }
+  /* button: wide and short */
+  .save-btn{
+    -webkit-appearance:none;
+    appearance:none;
+    border:0;
+    background: rgba(255,255,255,0.03);
+    color:var(--accent);
+    font-weight:600;
+    padding:10px 14px;
+    height:44px;
+    min-width:220px;
+    border-radius:10px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+    transition: transform 140ms cubic-bezier(.2,.9,.3,1), box-shadow 140ms;
+  }
+  .save-btn:active{ transform:translateY(1px); }
+  .save-btn:focus{ outline:2px solid rgba(255,255,255,0.06); outline-offset:2px; }
+
+  .save-meta{ flex:1 1 auto; min-width:0; padding-right:12px; }
+  .save-name{ font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .save-sub{ font-size:12px; color:var(--muted); margin-top:4px; }
+
+  .download-icon{ width:18px; height:18px; display:inline-block; opacity:0.95; }
+
+  .no-results{ text-align:center; padding:18px; opacity:0.85; font-size:14px; display:none; }
+
+  .hint{ font-size:12px; opacity:0.85; margin-top:10px; text-align:center; color:var(--muted); }
+
+  @media (max-width:600px){
+    .save-btn{ height:42px; padding:8px 12px; }
+    .title{ font-size:18px; }
+  }
 </style>
 </head>
 <body>
-  <!-- Fixed background layer – stays glued to viewport -->
   <div class="bg-fixed" aria-hidden="true"></div>
-  <!-- Fixed overlay for contrast -->
   <div class="bg-overlay" aria-hidden="true"></div>
 
-  <div class="menu-wrap">
-    <div class="menu-card" role="region" aria-label="Main menu">
-      <header class="menu-head">
-        <div>
-          <div class="title">Main Menu</div>
-          <div class="subtitle">Click a button to open a script or follow a link</div>
+  <div class="wrap">
+    <div class="panel" role="main" aria-label="PS4 save database">
+      <header class="top">
+        <div class="left-head">
+          <div class="title">The PS4 Save database</div>
+          <div class="subtitle">Click a button to download the save (zip)</div>
         </div>
-        <div class="music-control" aria-hidden="false" title="Play / Pause background music">
-          <div id="musicBtn" class="music-btn" aria-pressed="false" role="button">
-            <svg id="musicIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+
+        <div class="controls" aria-hidden="false">
+          <button class="btn-ghost" onclick="history.back()">Back</button>
+
+          <div class="music-control" title="Play / Pause background music">
+            <div id="musicBtn" class="music-btn" aria-pressed="false" role="button">
+              <svg id="musicIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+            </div>
           </div>
-          <div id="unmuteHint" class="unmute-hint" aria-hidden="true" style="display:none;">Playing (muted) — interact to unmute</div>
         </div>
       </header>
 
+      <div class="search-row">
+        <input id="search" class="search" type="search" placeholder="Filter saves — live" aria-label="Search saves" />
+      </div>
+
       <main>
-        <div id="rows" class="rows" aria-live="polite"></div>
+        <div id="list" class="list" aria-live="polite"></div>
+        <div id="noResults" class="no-results">No results</div>
         <div class="hint">Owned by Mexrl</div>
       </main>
     </div>
   </div>
 
-  <!-- Background audio (relative path) -->
   <audio id="bgAudio" loop preload="auto">
-    <source src="./music/bg.mp3" type="audio/mpeg">
-    <!-- fallback -->
+    <source src="../music/bg.mp3" type="audio/mpeg">
   </audio>
 
 <script>
-
-/* Buttons data */
-const buttonsData = [
-  { label: 'Ps4 Unicode', script: 'unicode.html', title: 'Open ./scripts/unicode.html' },
-  { label: 'online.js Editor', script: 'user-onlineJS-editor.html', title: 'Open ./scripts/user-onlineJS-editor.html' },
-  { label: 'The PS4 Save DB', script: 'ps4-save-database.html', title: 'Open ./scripts/ps4-save-database.html' }
+/*
+  EDIT HERE:
+  Add or remove objects from the `saves` array.
+  - name: display name shown in list
+  - file: path relative to site root (Savedat folder required by your setup)
+  Example: { name: 'Game Save', file: '/Savedat/game_save.zip' }
+*/
+const saves = [
+  { name: 'InFAMOUS Second Son (Infamous)', file: '/Savedat/inFAMOUS-Second-Son-(Infamous).zip' },
+  { name: 'InFAMOUS Second Son (True Hero)',    file: '/Savedat/inFAMOUS-Second-Son-(True-Hero).zip' }
 ];
 
+const listEl = document.getElementById('list');
+const noResults = document.getElementById('noResults');
+const search = document.getElementById('search');
 
-const rowsContainer = document.getElementById('rows');
-function buildMenu(items){
-  rowsContainer.innerHTML = '';
-  for(let i=0; i<items.length; i += 3){
-    const group = items.slice(i, i+3);
-    const row = document.createElement('div');
-    row.className = 'row';
-    group.forEach(btn => {
-      const el = document.createElement('button');
-      el.className = 'menu-btn';
-      el.type = 'button';
-      el.textContent = btn.label || 'Button';
-      if(btn.title) el.title = btn.title;
-      if(btn.link) el.dataset.link = btn.link;
-      if(btn.script) el.dataset.script = btn.script;
-      el.addEventListener('click', onMenuClick);
-      el.addEventListener('keydown', (e)=>{
-        if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
-      });
-      row.appendChild(el);
-    });
-    rowsContainer.appendChild(row);
+function buildList(items){
+  listEl.innerHTML = '';
+  if(!items.length){
+    noResults.style.display = 'block';
+    return;
+  } else {
+    noResults.style.display = 'none';
   }
-  if(items.length === 0){
-    const placeholder = document.createElement('div');
-    placeholder.style.textAlign = 'center';
-    placeholder.style.opacity = '0.75';
-    placeholder.style.padding = '22px';
-    placeholder.textContent = 'No buttons defined.';
-    rowsContainer.appendChild(placeholder);
+
+  items.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'save-card';
+
+    const meta = document.createElement('div');
+    meta.className = 'save-meta';
+
+    const name = document.createElement('div');
+    name.className = 'save-name';
+    name.textContent = item.name;
+
+    const sub = document.createElement('div');
+    sub.className = 'save-sub';
+    sub.textContent = item.file.replace(/^\/+/, ''); // show relative path
+
+    meta.appendChild(name);
+    meta.appendChild(sub);
+
+    // button (wide, short) — arrow down with line under it
+    const btn = document.createElement('button');
+    btn.className = 'save-btn';
+    btn.setAttribute('type','button');
+    btn.setAttribute('aria-label', `Download ${item.name}`);
+    btn.innerHTML = `
+      <span style="display:inline-flex;align-items:center;gap:10px">
+        <svg class="download-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <!-- arrow down onto a horizontal line -->
+          <path fill="currentColor" d="M5 20h14v-2H5v2zm7-12l5 5h-3v4h-4v-4H7l5-5z"/>
+        </svg>
+      </span>
+      <span style="width:8px"></span>
+    `;
+
+    // click -> download file from provided path (keeps user on page)
+    btn.addEventListener('click', () => downloadFile(item.file, item.name));
+
+    // keyboard support
+    btn.addEventListener('keydown', (e) => { if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); btn.click(); } });
+
+    card.appendChild(meta);
+    card.appendChild(btn);
+
+    listEl.appendChild(card);
+  });
+}
+
+/**
+ * Download while keeping user on the page:
+ * - Try fetch() to get the file as a blob and createObjectURL -> forces download without navigating away.
+ * - If fetch fails (CORS or network), fallback to anchor with download attribute.
+ */
+async function downloadFile(filePath, name){
+  const suggested = (name || 'save').replace(/[\/\\]+/g, '_') + (filePath.toLowerCase().endsWith('.zip') ? '.zip' : '');
+  try {
+    const resp = await fetch(filePath, { credentials: 'same-origin' });
+    if(!resp.ok) throw new Error('Network response not ok');
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = suggested;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // revoke after a short delay to ensure the download has been processed by browser
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (err) {
+    // fallback: standard anchor download (may navigate in some browsers if CORS or server forces it)
+    const a = document.createElement('a');
+    a.href = filePath;
+    a.setAttribute('download', suggested);
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   }
 }
 
-function onMenuClick(e){
-  const btn = e.currentTarget;
-  const link = btn.dataset.link;
-  const script = btn.dataset.script;
-
-  if(link){
-    window.location.href = link;
-    return;
-  }
-  if(script){
-    let target = script.trim();
-    if(!target.includes('/') && !target.includes('.')) target = target + '.html';
-    if(target.startsWith('./') || target.startsWith('/')){
-      window.location.href = target;
-    } else {
-      window.location.href = './scripts/' + target;
-    }
-    return;
-  }
-  console.warn('Button has no action defined.');
+function normalize(s){ return String(s || '').toLowerCase(); }
+function filterItems(q){
+  if(!q) return saves.slice();
+  const qq = normalize(q);
+  return saves.filter(it => normalize(it.name).includes(qq) || normalize(it.file).includes(qq));
 }
-buildMenu(buttonsData);
 
-/* Music autoplay + UI logic */
+search.addEventListener('input', (e) => {
+  const q = e.target.value;
+  const filtered = filterItems(q);
+  buildList(filtered);
+});
+
+search.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape'){ search.value=''; buildList(saves); }
+});
+
+// initial render
+buildList(saves);
+
+/* ------------------------------
+   Background music playback UI
+   (same logic as your other page)
+   ------------------------------ */
 const audio = document.getElementById('bgAudio');
 const musicBtn = document.getElementById('musicBtn');
 const musicIcon = document.getElementById('musicIcon');
-const unmuteHint = document.getElementById('unmuteHint');
 
 let isPlaying = false;
-let mutedFallback = false; // true when autoplay succeeded only muted
+let mutedFallback = false;
 
 function updateMusicIcon(){
-  // if playing => show pause icon, else show play icon
   if(isPlaying){
-    // pause icon
     musicIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>';
     musicBtn.setAttribute('aria-pressed','true');
   } else {
-    // play icon
     musicIcon.innerHTML = '<path d="M8 5v14l11-7z"></path>';
     musicBtn.setAttribute('aria-pressed','false');
   }
-
-  // if playing but muted fallback active, add visual cue
   if(isPlaying && mutedFallback){
     musicBtn.classList.add('muted');
-    unmuteHint.style.display = 'block';
-    unmuteHint.setAttribute('aria-hidden','false');
+    musicBtn.title = 'Playing (muted). Interact to unmute / click to pause';
   } else {
     musicBtn.classList.remove('muted');
-    unmuteHint.style.display = 'none';
-    unmuteHint.setAttribute('aria-hidden','true');
-  }
-
-  // update accessible title
-  if(isPlaying){
-    if(mutedFallback){
-      musicBtn.title = 'Playing (muted). Click to pause or interact to unmute';
-    } else {
-      musicBtn.title = 'Playing. Click to pause';
-    }
-  } else {
-    musicBtn.title = 'Paused. Click to play';
+    musicBtn.title = isPlaying ? 'Playing. Click to pause' : 'Paused. Click to play';
   }
 }
 
-// Attempt autoplay unmuted; if blocked, try muted fallback
 async function tryAutoplay(){
-  // ensure loop & volume
   audio.loop = true;
   audio.volume = 0.9;
-
-  // first try unmuted autoplay
   audio.muted = false;
   try {
     await audio.play();
     isPlaying = true;
     mutedFallback = false;
     updateMusicIcon();
-    // no need to attach interaction unmute handlers
-  } catch (e) {
-    // unmuted autoplay blocked -> try muted autoplay so page is "playing"
+  } catch(e){
     try {
       audio.muted = true;
       await audio.play();
       isPlaying = true;
       mutedFallback = true;
       updateMusicIcon();
-      // attach first-interaction handler to unmute when the user interacts
       attachUnmuteOnFirstInteraction();
-    } catch (e2) {
-      // even muted autoplay blocked (rare). leave paused and let user start.
+    } catch(e2){
       isPlaying = false;
       mutedFallback = false;
       updateMusicIcon();
@@ -378,43 +381,34 @@ async function tryAutoplay(){
 }
 
 function attachUnmuteOnFirstInteraction(){
-  function attemptUnmuteOnce(){
+  function attemptUnmute(){
     if(mutedFallback && audio.muted){
-      // try to unmute and keep playing
       audio.muted = false;
-      // some browsers may require calling play again — try it
-      audio.play().catch(()=>{ /* ignore */ });
+      audio.play().catch(()=>{});
       mutedFallback = false;
       updateMusicIcon();
     }
-    window.removeEventListener('pointerdown', attemptUnmuteOnce);
-    window.removeEventListener('keydown', attemptUnmuteOnce);
+    window.removeEventListener('pointerdown', attemptUnmute);
+    window.removeEventListener('keydown', attemptUnmute);
   }
-  window.addEventListener('pointerdown', attemptUnmuteOnce, { once: true });
-  window.addEventListener('keydown', attemptUnmuteOnce, { once: true });
+  window.addEventListener('pointerdown', attemptUnmute, { once:true });
+  window.addEventListener('keydown', attemptUnmute, { once:true });
 }
 
-// Start autoplay attempts as soon as script runs
-tryAutoplay();
-
-/* Music button behavior (manual toggle) */
 musicBtn.addEventListener('click', async () => {
   if(isPlaying){
-    // pause
     audio.pause();
     isPlaying = false;
-    mutedFallback = false; // clear fallback state on user action
+    mutedFallback = false;
     updateMusicIcon();
   } else {
-    // try to play unmuted first
     audio.muted = false;
     try {
       await audio.play();
       isPlaying = true;
       mutedFallback = false;
       updateMusicIcon();
-    } catch (e) {
-      // unmuted play blocked — try muted play
+    } catch(e){
       try {
         audio.muted = true;
         await audio.play();
@@ -422,8 +416,7 @@ musicBtn.addEventListener('click', async () => {
         mutedFallback = true;
         updateMusicIcon();
         attachUnmuteOnFirstInteraction();
-      } catch (e2) {
-        // can't play — stay paused
+      } catch(e2){
         isPlaying = false;
         mutedFallback = false;
         updateMusicIcon();
@@ -432,23 +425,22 @@ musicBtn.addEventListener('click', async () => {
   }
 });
 
-/* If the user interacts anywhere and we are playing muted, we'll unmute automatically (UX friendly) */
 window.addEventListener('pointerdown', () => {
   if(isPlaying && mutedFallback && audio.muted){
     audio.muted = false;
     mutedFallback = false;
     updateMusicIcon();
   }
-}, { once: false });
-
+});
 window.addEventListener('keydown', () => {
   if(isPlaying && mutedFallback && audio.muted){
     audio.muted = false;
     mutedFallback = false;
     updateMusicIcon();
   }
-}, { once: false });
+});
 
+tryAutoplay();
 </script>
 </body>
 </html>
