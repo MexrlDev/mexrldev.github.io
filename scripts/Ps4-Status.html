@@ -31,7 +31,7 @@
   .title{font-size:20px;font-weight:700}
   .subtitle{font-size:13px;opacity:0.9}
 
-  .controls{display:flex;gap:10px;align-items:center}
+  .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .btn{padding:8px 12px;border-radius:10px;border:1px solid var(--glass-border);background:rgba(255,255,255,0.02);color:var(--accent);cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}
   .search{padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:var(--accent);outline:none;min-width:240px}
 
@@ -39,7 +39,17 @@
   .chart{width:100%;border-collapse:collapse;margin-top:8px}
   .row{display:grid;grid-template-columns:220px 1fr 1fr 220px 320px;gap:12px;padding:12px;border-radius:12px;background:var(--glass-bg);border:1px solid var(--glass-border);align-items:start;margin-bottom:10px;box-shadow:0 6px 18px rgba(0,0,0,0.18)}
 
-  .row.header{font-weight:700;position:sticky;top:12px;z-index:5}
+  /* sticky header with solid background for readability */
+  .row.header{
+    position:sticky;
+    top:0;                          /* stick to very top of panel content */
+    z-index:10;
+    background:rgba(10,10,10,0.92); /* more opaque to prevent see-through when sticky */
+    backdrop-filter:blur(8px);
+    font-weight:700;
+    box-shadow:0 4px 12px rgba(0,0,0,0.3); /* subtle shadow when lifted */
+  }
+
   .cell{padding:6px 8px}
   .firmware{font-weight:700}
   .list{margin:0;padding-left:18px}
@@ -50,7 +60,7 @@
   @media (max-width:1000px){
     .row{grid-template-columns:160px 1fr;}
     .row > .kernel,.row > .action,.row > .info{display:none}
-    .row.header{grid-template-columns:160px 1fr}
+    .row.header{grid-template-columns:160px 1fr} /* keep sticky behavior */
   }
   @media (max-width:560px){
     .row{grid-template-columns:1fr}
@@ -66,7 +76,6 @@
 
   /* collapsed toggles */
   .toggle{font-size:12px;padding:6px 10px;border-radius:8px;border:1px solid var(--glass-border);background:transparent;cursor:pointer}
-
 </style>
 </head>
 <body>
@@ -84,7 +93,7 @@
         <div class="controls">
           <input id="search" class="search" type="search" placeholder="Filter firmware / exploits / keywords" aria-label="Search chart" />
           <button class="btn" id="reset">Reset</button>
-          <a href="/" class="btn" role="button">← Main Menu</a>
+          <a href="./index.html" class="btn" role="button">← Main Menu</a>
           <div class="music-control" title="Play / Pause background music">
             <div id="musicBtn" class="btn" aria-pressed="false">Play Music</div>
           </div>
