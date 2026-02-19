@@ -27,12 +27,8 @@
     background-color:#000;
   }
 
-  /* Background image now handled by .bg-fixed (below) */
-  body{
-    background: none; /* remove any direct background */
-  }
+  body{ background: none; }
 
-  /* FIXED BACKGROUND LAYER – stays glued to viewport */
   .bg-fixed {
     position: fixed;
     inset: 0;
@@ -43,7 +39,6 @@
     z-index: -2;
   }
 
-  /* overlay so UI is readable – also fixed, above background */
   .bg-overlay{
     position:fixed;
     inset:0;
@@ -60,7 +55,7 @@
     padding:40px 20px;
     box-sizing:border-box;
     position: relative;
-    z-index: 1; /* ensure content is above fixed layers */
+    z-index: 1;
   }
 
   .menu-card{
@@ -99,7 +94,6 @@
     gap:var(--gap);
   }
 
-  /* Each row centers its children; 1 or 2 buttons will be centered automatically */
   .row{
     display:flex;
     gap:14px;
@@ -177,7 +171,6 @@
   .music-btn:active{ transform:scale(0.95); }
   .music-btn svg{ width:18px; height:18px; fill:currentColor; color:var(--accent); opacity:0.95; }
 
-  /* when playing but muted fallback is active, show small yellow dot on the control */
   .music-btn.muted::after{
     content: '';
     position: absolute;
@@ -190,7 +183,6 @@
     box-shadow: 0 0 6px rgba(240,196,25,0.6);
   }
 
-  /* small helper text when muted fallback is active */
   .unmute-hint{
     font-size:12px;
     margin-left:10px;
@@ -201,9 +193,7 @@
 </style>
 </head>
 <body>
-  <!-- Fixed background layer – stays glued to viewport -->
   <div class="bg-fixed" aria-hidden="true"></div>
-  <!-- Fixed overlay for contrast -->
   <div class="bg-overlay" aria-hidden="true"></div>
 
   <div class="menu-wrap">
@@ -228,23 +218,26 @@
     </div>
   </div>
 
-  <!-- Background audio (relative path) -->
   <audio id="bgAudio" loop preload="auto">
     <source src="./music/bg.mp3" type="audio/mpeg">
-    <!-- fallback -->
   </audio>
 
 <script>
-
-/* Buttons data */
+/* Buttons data
+   - Use `link` for external URLs (opens in new tab).
+   - Use `script` for local files inside ./scripts/ (or full https:// URL).
+   - Example for GitHub: use `link: 'https://github.com/OWNER/REPO/blob/main/path/ps4-save-database.html'`
+*/
 const buttonsData = [
   { label: 'Ps4 Symbols', script: 'PS4-Symbols.html', title: 'Open ./scripts/PS4-Symbols.html' },
   { label: 'online.json Editor', script: 'user-onlineJSON-editor.html', title: 'Open ./scripts/user-onlineJSON-editor.html' },
+  // If you want to open the GitHub page for this file, replace script with link:
+  // { label: 'The PS4 Save DB', link: 'https://github.com/OWNER/REPO/blob/main/path/ps4-save-database.html', title: 'Open on GitHub' }
   { label: 'The PS4 Save DB', script: 'ps4-save-database.html', title: 'Open ./scripts/ps4-save-database.html' }
 ];
 
-
 const rowsContainer = document.getElementById('rows');
+
 function buildMenu(items){
   rowsContainer.innerHTML = '';
   for(let i=0; i<items.length; i += 3){
@@ -259,6 +252,7 @@ function buildMenu(items){
       if(btn.title) el.title = btn.title;
       if(btn.link) el.dataset.link = btn.link;
       if(btn.script) el.dataset.script = btn.script;
+      el.setAttribute('aria-label', btn.label || 'menu button');
       el.addEventListener('click', onMenuClick);
       el.addEventListener('keydown', (e)=>{
         if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
@@ -277,51 +271,90 @@ function buildMenu(items){
   }
 }
 
+/* Navigate helper: external opens new tab, internal navigates same tab */
+function navigateTo(url, external = false){
+  console.info('navigateTo', url, 'external=', external);
+  try {
+    if(external){
+      window.open(url, '_blank', 'noopener');
+    } else {
+      window.location.href = url;
+    }
+  } catch (err){
+    console.error('Navigation failed', err);
+  }
+}
+
 function onMenuClick(e){
   const btn = e.currentTarget;
   const link = btn.dataset.link;
   const script = btn.dataset.script;
 
   if(link){
-    window.location.href = link;
-    return;
-  }
-  if(script){
-    let target = script.trim();
-    if(!target.includes('/') && !target.includes('.')) target = target + '.html';
-    if(target.startsWith('./') || target.startsWith('/')){
-      window.location.href = target;
+    // If link is absolute (http/https) open in new tab; else treat as relative path
+    if(/^https?:\/\//i.test(link)){
+      navigateTo(link, true);
     } else {
-      window.location.href = './scripts/' + target;
+      navigateTo(link, false);
     }
     return;
   }
+
+  if(script){
+    let target = script.trim();
+
+    // allow a github:owner/repo/path shorthand if you prefer
+    if(target.startsWith('github:')){
+      const ghPath = target.slice('github:'.length);
+      const ghUrl = 'https://github.com/' + ghPath;
+      navigateTo(ghUrl, true);
+      return;
+    }
+
+    // if the script is an absolute http(s) URL, open in new tab
+    if(/^https?:\/\//i.test(target)){
+      navigateTo(target, true);
+      return;
+    }
+
+    // ensure .html when there's no extension at all
+    if(!target.includes('.')){
+      target = target + '.html';
+    }
+
+    // if user provided an explicit path, use it as-is
+    if(target.startsWith('./') || target.startsWith('/')){
+      navigateTo(target, false);
+    } else {
+      // default location inside ./scripts/
+      navigateTo('./scripts/' + target, false);
+    }
+    return;
+  }
+
   console.warn('Button has no action defined.');
 }
+
 buildMenu(buttonsData);
 
-/* Music autoplay + UI logic */
+/* Music autoplay + UI logic (unchanged) */
 const audio = document.getElementById('bgAudio');
 const musicBtn = document.getElementById('musicBtn');
 const musicIcon = document.getElementById('musicIcon');
 const unmuteHint = document.getElementById('unmuteHint');
 
 let isPlaying = false;
-let mutedFallback = false; // true when autoplay succeeded only muted
+let mutedFallback = false;
 
 function updateMusicIcon(){
-  // if playing => show pause icon, else show play icon
   if(isPlaying){
-    // pause icon
     musicIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>';
     musicBtn.setAttribute('aria-pressed','true');
   } else {
-    // play icon
     musicIcon.innerHTML = '<path d="M8 5v14l11-7z"></path>';
     musicBtn.setAttribute('aria-pressed','false');
   }
 
-  // if playing but muted fallback active, add visual cue
   if(isPlaying && mutedFallback){
     musicBtn.classList.add('muted');
     unmuteHint.style.display = 'block';
@@ -332,7 +365,6 @@ function updateMusicIcon(){
     unmuteHint.setAttribute('aria-hidden','true');
   }
 
-  // update accessible title
   if(isPlaying){
     if(mutedFallback){
       musicBtn.title = 'Playing (muted). Click to pause or interact to unmute';
@@ -344,32 +376,24 @@ function updateMusicIcon(){
   }
 }
 
-// Attempt autoplay unmuted; if blocked, try muted fallback
 async function tryAutoplay(){
-  // ensure loop & volume
   audio.loop = true;
   audio.volume = 0.9;
-
-  // first try unmuted autoplay
   audio.muted = false;
   try {
     await audio.play();
     isPlaying = true;
     mutedFallback = false;
     updateMusicIcon();
-    // no need to attach interaction unmute handlers
   } catch (e) {
-    // unmuted autoplay blocked -> try muted autoplay so page is "playing"
     try {
       audio.muted = true;
       await audio.play();
       isPlaying = true;
       mutedFallback = true;
       updateMusicIcon();
-      // attach first-interaction handler to unmute when the user interacts
       attachUnmuteOnFirstInteraction();
     } catch (e2) {
-      // even muted autoplay blocked (rare). leave paused and let user start.
       isPlaying = false;
       mutedFallback = false;
       updateMusicIcon();
@@ -380,10 +404,8 @@ async function tryAutoplay(){
 function attachUnmuteOnFirstInteraction(){
   function attemptUnmuteOnce(){
     if(mutedFallback && audio.muted){
-      // try to unmute and keep playing
       audio.muted = false;
-      // some browsers may require calling play again — try it
-      audio.play().catch(()=>{ /* ignore */ });
+      audio.play().catch(()=>{});
       mutedFallback = false;
       updateMusicIcon();
     }
@@ -394,19 +416,15 @@ function attachUnmuteOnFirstInteraction(){
   window.addEventListener('keydown', attemptUnmuteOnce, { once: true });
 }
 
-// Start autoplay attempts as soon as script runs
 tryAutoplay();
 
-/* Music button behavior (manual toggle) */
 musicBtn.addEventListener('click', async () => {
   if(isPlaying){
-    // pause
     audio.pause();
     isPlaying = false;
-    mutedFallback = false; // clear fallback state on user action
+    mutedFallback = false;
     updateMusicIcon();
   } else {
-    // try to play unmuted first
     audio.muted = false;
     try {
       await audio.play();
@@ -414,7 +432,6 @@ musicBtn.addEventListener('click', async () => {
       mutedFallback = false;
       updateMusicIcon();
     } catch (e) {
-      // unmuted play blocked — try muted play
       try {
         audio.muted = true;
         await audio.play();
@@ -423,7 +440,6 @@ musicBtn.addEventListener('click', async () => {
         updateMusicIcon();
         attachUnmuteOnFirstInteraction();
       } catch (e2) {
-        // can't play — stay paused
         isPlaying = false;
         mutedFallback = false;
         updateMusicIcon();
@@ -432,7 +448,6 @@ musicBtn.addEventListener('click', async () => {
   }
 });
 
-/* If the user interacts anywhere and we are playing muted, we'll unmute automatically (UX friendly) */
 window.addEventListener('pointerdown', () => {
   if(isPlaying && mutedFallback && audio.muted){
     audio.muted = false;
