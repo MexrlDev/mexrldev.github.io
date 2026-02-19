@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hex → Base64 · Converter</title>
+  <link rel="icon" type="image/png" href="./img/icon.png" />
+  <style>
+    /* ---------- same glass theme ---------- */
+    :root {
+      --page-pad: 20px;
+      --card-radius: 14px;
+      --glass-bg: rgba(255,255,255,0.06);
+      --glass-border: rgba(255,255,255,0.06);
+      --accent: #ffffff;
+      --shadow: rgba(0,0,0,0.35);
+      --gap: 18px;
+      --font-family: "Segoe UI", Roboto, system-ui, -apple-system, "Helvetica Neue", Arial;
+    }
+
+    html { height: 100%; }
+    body {
+      min-height: 100vh;
+      margin:0;
+      font-family:var(--font-family);
+      color:var(--accent);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      background: none;
+      position: relative;
+    }
+
+    .bg-fixed {
+      position: fixed;
+      inset: 0;
+      background-image: url('../img/Baek.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: -2;
+    }
+    .bg-overlay {
+      position:fixed;
+      inset:0;
+      background: linear-gradient(rgba(0,0,0,0.12), rgba(0,0,0,0.28));
+      pointer-events:none;
+      z-index: -1;
+    }
+
+    .wrap {
+      min-height:100vh;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding:36px 18px;
+      box-sizing:border-box;
+      position: relative;
+      z-index: 1;
+    }
+
+    .panel {
+      width: min(1100px, 96%);
+      max-width:1200px;
+      margin: 12px 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));
+      border-radius:18px;
+      padding:var(--page-pad);
+      box-shadow: 0 10px 40px var(--shadow);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--glass-border);
+    }
+
+    header.top {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .left-head {
+      display:flex;
+      flex-direction:column;
+    }
+    .title {
+      font-size:20px;
+      font-weight:600;
+    }
+    .subtitle {
+      font-size:13px;
+      opacity:0.9;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .controls {
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    .btn-ghost {
+      padding:8px 12px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.02);
+      color:var(--accent);
+      cursor:pointer;
+      font-weight:600;
+    }
+    .btn-ghost:active { transform: translateY(1px); }
+
+    .music-control {
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+    }
+    .music-btn {
+      width:40px;
+      height:40px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.02);
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      transition: transform 140ms;
+      position:relative;
+    }
+    .music-btn:active { transform:scale(0.95); }
+    .music-btn svg { width:18px; height:18px; fill:currentColor; color:var(--accent); opacity:0.95; }
+    .music-btn.muted::after {
+      content: '';
+      position: absolute;
+      right: 6px;
+      bottom: 6px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #f0c419;
+      box-shadow: 0 0 6px rgba(240,196,25,0.6);
+    }
+
+    /* editor panel */
+    .editor-panel {
+      background: rgba(0,0,0,0.3);
+      border-radius: 14px;
+      padding: 18px;
+      margin: 20px 0;
+      border: 1px solid var(--glass-border);
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 14px;
+      align-items: center;
+    }
+    .field {
+      flex: 1 1 250px;
+    }
+    .field label {
+      display: block;
+      font-size: 12px;
+      opacity: 0.8;
+      margin-bottom: 4px;
+    }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05);
+      color: white;
+      font-family: monospace;
+    }
+    .field select option { background: #222; }
+    .field textarea {
+      min-height: 120px;
+      resize: vertical;
+      font-family: monospace;
+      font-size: 13px;
+    }
+    .btn {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: white;
+      padding: 8px 18px;
+      border-radius: 30px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-right: 8px;
+    }
+    .btn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 20px 0;
+    }
+    pre {
+      background: rgba(0,0,0,0.4);
+      padding: 12px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .hint {
+      font-size:12px; opacity:0.85; margin-top:10px; text-align:center;
+    }
+    .small-note {
+      font-size: 10px;
+      opacity: 0.7;
+      margin-top: 2px;
+    }
+    .info-text {
+      font-size: 11px;
+      color: #aaccff;
+      background: rgba(100,150,255,0.1);
+      padding: 6px 12px;
+      border-radius: 20px;
+      margin-top: 6px;
+    }
+    #fileInput { display: none; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 28px;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+    }
+    .toast.show { opacity: 1; pointer-events: auto; }
+
+    .error { color: #ffd6d6; background: rgba(255,0,0,0.06); padding: 8px 10px; border-radius: 8px; }
+
+  </style>
+</head>
+<body>
+  <div class="bg-fixed" aria-hidden="true"></div>
+  <div class="bg-overlay" aria-hidden="true"></div>
+
+  <div class="wrap">
+    <div class="panel" role="main" aria-label="Hex to Base64 Converter">
+      <header class="top">
+        <div class="left-head">
+          <div class="title">Hex → Base64 · Converter</div>
+          <div class="subtitle">
+            Paste hex data (with or without spaces) and convert it to Base64 quickly.
+            <span class="small-note">Owner: Mexrl · UI inspired by the original PS4 tools style</span>
+          </div>
+        </div>
+        <div class="controls">
+          <button class="btn-ghost" onclick="history.back()">Back</button>
+          <div class="music-control" title="Play / Pause background music">
+            <div id="musicBtn" class="music-btn" aria-pressed="false" role="button">
+              <svg id="musicIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="editor-panel">
+        <div class="row">
+          <div class="field" style="flex: 2 1 520px;">
+            <label for="hexInput">Hex input</label>
+            <textarea id="hexInput" placeholder="e.g. 48656c6c6f2c20776f726c6421 or 48 65 6c 6c 6f ..."></textarea>
+            <div class="small-note">You can upload a file containing hex, or paste it. Non-hex characters will be ignored (except whitespace).</div>
+          </div>
+          <div class="field" style="flex: 1 1 320px;">
+            <label for="base64Output">Base64 output</label>
+            <textarea id="base64Output" readonly placeholder="Converted Base64 will appear here"></textarea>
+            <div style="margin-top:8px; display:flex; gap:8px;">
+              <button class="btn" id="copyBtn">📋 Copy</button>
+              <button class="btn" id="downloadBtn">⬇️ Download</button>
+              <button class="btn" id="clearBtn">✖ Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn" id="convertBtn">⚡ Convert Hex → Base64</button>
+          <button class="btn" id="uploadBtn">📂 Upload hex file</button>
+        </div>
+        <input type="file" id="fileInput" accept="text/*" />
+
+        <div id="feedback" style="margin-top:12px;"></div>
+
+        <div class="info-text">
+          ℹ️ Tip: If your input is long (large binary), the conversion may take a moment. The converter expects valid hex pairs; an odd number of hex characters will be treated as if a leading 0 was present for the last nibble.
+        </div>
+      </div>
+
+      <div class="hint">
+        Hex → Base64 converter · Owned by Mexrl
+        <div class="small-note">Thank you for visiting</div>
+      </div>
+    </div>
+  </div>
+
+  <audio id="bgAudio" loop preload="auto">
+    <source src="../music/bg.mp3" type="audio/mpeg">
+  </audio>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (function() {
+      // ---------- MUSIC (same autoplay logic) ----------
+      const audio = document.getElementById('bgAudio');
+      const musicBtn = document.getElementById('musicBtn');
+      const musicIcon = document.getElementById('musicIcon');
+      let isPlaying = false;
+      let mutedFallback = false;
+
+      function updateMusicIcon() {
+        if (isPlaying) {
+          musicIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>';
+          musicBtn.setAttribute('aria-pressed','true');
+        } else {
+          musicIcon.innerHTML = '<path d="M8 5v14l11-7z"></path>';
+          musicBtn.setAttribute('aria-pressed','false');
+        }
+        if (isPlaying && mutedFallback) {
+          musicBtn.classList.add('muted');
+          musicBtn.title = 'Playing (muted). Interact to unmute / click to pause';
+        } else {
+          musicBtn.classList.remove('muted');
+          musicBtn.title = isPlaying ? 'Playing. Click to pause' : 'Paused. Click to play';
+        }
+      }
+
+      async function tryAutoplay() {
+        audio.loop = true;
+        audio.volume = 0.9;
+        audio.muted = false;
+        try {
+          await audio.play();
+          isPlaying = true;
+          mutedFallback = false;
+          updateMusicIcon();
+        } catch (e) {
+          try {
+            audio.muted = true;
+            await audio.play();
+            isPlaying = true;
+            mutedFallback = true;
+            updateMusicIcon();
+            attachUnmuteOnFirstInteraction();
+          } catch (e2) {
+            isPlaying = false;
+            mutedFallback = false;
+            updateMusicIcon();
+          }
+        }
+      }
+
+      function attachUnmuteOnFirstInteraction() {
+        function attemptUnmute() {
+          if (mutedFallback && audio.muted) {
+            audio.muted = false;
+            audio.play().catch(() => {});
+            mutedFallback = false;
+            updateMusicIcon();
+          }
+          window.removeEventListener('pointerdown', attemptUnmute);
+          window.removeEventListener('keydown', attemptUnmute);
+        }
+        window.addEventListener('pointerdown', attemptUnmute, { once: true });
+        window.addEventListener('keydown', attemptUnmute, { once: true });
+      }
+
+      musicBtn.addEventListener('click', async () => {
+        if (isPlaying) {
+          audio.pause();
+          isPlaying = false;
+          mutedFallback = false;
+          updateMusicIcon();
+        } else {
+          audio.muted = false;
+          try {
+            await audio.play();
+            isPlaying = true;
+            mutedFallback = false;
+            updateMusicIcon();
+          } catch (e) {
+            try {
+              audio.muted = true;
+              await audio.play();
+              isPlaying = true;
+              mutedFallback = true;
+              updateMusicIcon();
+              attachUnmuteOnFirstInteraction();
+            } catch (e2) {
+              isPlaying = false;
+              mutedFallback = false;
+              updateMusicIcon();
+            }
+          }
+        }
+      });
+
+      window.addEventListener('pointerdown', () => {
+        if (isPlaying && mutedFallback && audio.muted) {
+          audio.muted = false;
+          mutedFallback = false;
+          updateMusicIcon();
+        }
+      });
+      window.addEventListener('keydown', () => {
+        if (isPlaying && mutedFallback && audio.muted) {
+          audio.muted = false;
+          mutedFallback = false;
+          updateMusicIcon();
+        }
+      });
+
+      tryAutoplay();
+
+      // ---------- Converter logic ----------
+      const hexInput = document.getElementById('hexInput');
+      const base64Output = document.getElementById('base64Output');
+      const convertBtn = document.getElementById('convertBtn');
+      const uploadBtn = document.getElementById('uploadBtn');
+      const fileInput = document.getElementById('fileInput');
+      const copyBtn = document.getElementById('copyBtn');
+      const downloadBtn = document.getElementById('downloadBtn');
+      const clearBtn = document.getElementById('clearBtn');
+      const feedback = document.getElementById('feedback');
+      const toast = document.getElementById('toast');
+
+      function showToast(msg, timeout = 1800) {
+        toast.textContent = msg;
+        toast.classList.add('show');
+        clearTimeout(toast._t);
+        toast._t = setTimeout(() => toast.classList.remove('show'), timeout);
+      }
+
+      function sanitizeHex(s) {
+        // keep only hex chars
+        return s.replace(/[^0-9a-fA-F]/g, '');
+      }
+
+      function hexToBase64(hex) {
+        const clean = sanitizeHex(hex);
+        if (clean.length === 0) return '';
+        // If odd length, treat as if leading 0 for the last nibble (e.g. 'a' -> '0a')
+        const padded = clean.length % 2 === 1 ? '0' + clean : clean;
+        const bytes = new Uint8Array(padded.length / 2);
+        for (let i = 0; i < padded.length; i += 2) {
+          const byte = parseInt(padded.substr(i,2), 16);
+          if (Number.isNaN(byte)) throw new Error('Invalid hex sequence');
+          bytes[i/2] = byte;
+        }
+        // convert bytes to binary string then to base64
+        let binary = '';
+        const chunk = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunk) {
+          binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+        }
+        return btoa(binary);
+      }
+
+      function setFeedback(msg, isError=false) {
+        feedback.innerHTML = isError ? '<div class="error">' + msg + '</div>' : '<div>' + msg + '</div>';
+      }
+
+      convertBtn.addEventListener('click', () => {
+        try {
+          const hex = hexInput.value || '';
+          const out = hexToBase64(hex);
+          base64Output.value = out;
+          if (out.length) {
+            setFeedback('Converted ' + Math.ceil(sanitizeHex(hex).length/2) + ' bytes.');
+            showToast('Converted');
+          } else {
+            setFeedback('No hex input detected.');
+          }
+        } catch (e) {
+          setFeedback('Conversion failed: ' + e.message, true);
+        }
+      });
+
+      clearBtn.addEventListener('click', () => {
+        hexInput.value = '';
+        base64Output.value = '';
+        feedback.innerHTML = '';
+      });
+
+      copyBtn.addEventListener('click', async () => {
+        const text = base64Output.value || '';
+        if (!text) { showToast('Nothing to copy'); return; }
+        try {
+          await navigator.clipboard.writeText(text);
+          showToast('Copied to clipboard');
+        } catch (e) {
+          // fallback
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); showToast('Copied to clipboard'); } catch (e2) { showToast('Copy failed'); }
+          ta.remove();
+        }
+      });
+
+      downloadBtn.addEventListener('click', () => {
+        const text = base64Output.value || '';
+        if (!text) { showToast('Nothing to download'); return; }
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'output.base64.txt';
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      uploadBtn.addEventListener('click', () => fileInput.click());
+
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const txt = String(ev.target.result || '');
+          hexInput.value = txt.trim();
+          showToast('Loaded file');
+        };
+        reader.readAsText(file);
+        fileInput.value = '';
+      });
+
+      // Allow Ctrl+Enter to convert quickly
+      hexInput.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          convertBtn.click();
+        }
+      });
+
+    })();
+  </script>
+</body>
+</html>
