@@ -208,17 +208,8 @@
   </audio>
 
 <script>
-/*
-  EDIT HERE:
-  Add or remove objects from the `saves` array.
-  - name: display name shown in list
-  - file: path or filename for the ZIP. You can specify:
-      'Savedat/foo.zip'  (relative)
-      '/Savedat/foo.zip' (absolute)
-      'foo.zip'          (filename only)
-      'https://...'      (full URL)
-  The script will probe likely locations (./Savedat, ../Savedat, /Savedat, same dir, parent dir, root).
-*/
+
+ // add more... uh.. buttons if needed
 const saves = [
   // better to provide *just* filenames (the script will try Savedat locations first)
   { name: 'InFAMOUS Second Son (Infamous)', file: 'inFAMOUS-Second-Son-(Infamous).zip' },
@@ -329,10 +320,7 @@ function makeCandidates(filePath){
   // if the original already had a Savedat prefix, preserve some variations
   const hasSavedat = /^savedat\//i.test(cleaned);
 
-  // If current script is in a subfolder (e.g. /scripts/ps4-save-database.html), ../Savedat is most likely.
-  // We'll add several options to be robust.
   if(hasSavedat){
-    // examples: filePath was 'Savedat/foo.zip' or '/Savedat/foo.zip'
     candidates.push('./' + cleaned);            // ./Savedat/foo.zip
     candidates.push('../' + cleaned);           // ../Savedat/foo.zip
     candidates.push('/' + cleaned);             // /Savedat/foo.zip
@@ -350,9 +338,7 @@ function makeCandidates(filePath){
   return [...new Set(candidates)];
 }
 
-/**
- * Try to fetch from candidates until one succeeds (status 200). Uses GET and returns response (or throws).
- */
+
 async function tryFetchCandidates(candidates){
   let lastError = null;
   for(const url of candidates){
@@ -384,9 +370,7 @@ async function tryFetchCandidates(candidates){
   throw lastError || new Error('No candidates to try');
 }
 
-/**
- * Parse filename from Content-Disposition header if present.
- */
+  
 function filenameFromContentDisposition(headerValue){
   if(!headerValue) return null;
   // common formats: attachment; filename="name.zip" or filename*=UTF-8''name.zip
@@ -402,14 +386,7 @@ function filenameFromContentDisposition(headerValue){
   return null;
 }
 
-/**
- * Perform the high-level download logic:
- * - Generate candidate URLs
- * - Try fetch (HEAD -> GET fallback)
- * - If success, stream blob and force download via object URL (non-navigating)
- * - If fetch fails, try anchor download fallback(s)
- * - Update UI status element and re-enable button
- */
+
 async function downloadFileWithProbing(filePath, displayName, buttonEl, statusEl){
   // Prepare UI
   buttonEl.disabled = true;
