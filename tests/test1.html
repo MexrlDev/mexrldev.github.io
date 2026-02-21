@@ -3,271 +3,567 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PS4 WebKit · UAF simulation (educational)</title>
+    <title>PS4 THERMAL UAF · MATRIX TERMINAL</title>
     <style>
         * {
-            font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
         }
+
         body {
-            background: #1a2538;
+            background: #0b0f16;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 20px;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            padding: 16px;
+            position: relative;
+            overflow-x: hidden;
         }
-        .card {
-            max-width: 800px;
+
+        /* Matrix rain canvas (background effect) */
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            background: #f5f9ff;
-            border-radius: 40px;
-            box-shadow: 0 30px 50px rgba(0,0,0,0.6);
-            overflow: hidden;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.15;
         }
+
+        /* CRT flicker animation */
+        @keyframes flicker {
+            0% { opacity: 0.98; }
+            50% { opacity: 1; }
+            100% { opacity: 0.99; }
+        }
+
+        /* Glitch effect */
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(2px, -2px); }
+            60% { transform: translate(-1px, 1px); }
+            80% { transform: translate(1px, -1px); }
+            100% { transform: translate(0); }
+        }
+
+        .glitch-text {
+            animation: glitch 0.2s infinite;
+        }
+
+        .terminal-container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 1000px;
+            background: rgba(10, 20, 30, 0.92);
+            backdrop-filter: blur(6px);
+            border: 2px solid #2c6c9e;
+            border-radius: 24px;
+            box-shadow: 0 0 40px #00a6ff40, 0 0 10px #00d0ff inset;
+            padding: 24px;
+            color: #b0f0ff;
+            font-size: 1rem;
+            line-height: 1.5;
+            transition: all 0.2s;
+            animation: flicker 3s infinite;
+        }
+
+        /* Header with glitchy title */
         .header {
-            background: #0e1e2f;
-            color: white;
-            padding: 28px 32px;
-        }
-        .header h1 {
-            margin: 0;
-            font-weight: 600;
-            font-size: 2.2rem;
             display: flex;
-            gap: 12px;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #1f6fb0;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
             flex-wrap: wrap;
         }
-        .header h1 span {
-            background: #b34040;
-            font-size: 1rem;
-            padding: 6px 16px;
-            border-radius: 40px;
-            font-weight: 500;
-            align-self: center;
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-shadow: 0 0 10px #0af, 0 0 20px #0af;
+            letter-spacing: 4px;
         }
-        .content {
-            padding: 32px;
+
+        .title span {
+            color: #ff5e7c;
+            text-shadow: 0 0 10px #f0f;
         }
-        .info {
-            background: #e0ebff;
-            border-left: 6px solid #004e9e;
-            padding: 18px 22px;
-            border-radius: 24px;
-            margin-bottom: 28px;
-            font-size: 1rem;
-            color: #002856;
+
+        .status-panel {
+            display: flex;
+            gap: 18px;
+            background: #0a1a2b;
+            padding: 10px 18px;
+            border-radius: 60px;
+            border: 1px solid #3b8fc2;
         }
-        .info strong {
-            color: #001c3d;
+
+        .led {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #00ff88;
+            box-shadow: 0 0 12px #00ff88;
+            animation: pulse 1.5s infinite;
         }
-        .button {
-            background: #1e4f8a;
-            border: none;
-            color: white;
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        .sys-info {
+            font-size: 0.85rem;
+            color: #8fcbff;
+        }
+
+        /* Main terminal screen */
+        .terminal-screen {
+            background: #051015;
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid #2b7bbf;
+            box-shadow: inset 0 0 25px #000000, 0 0 15px #004466;
+            min-height: 350px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 0.95rem;
+            scroll-behavior: smooth;
+        }
+
+        .terminal-line {
+            margin: 4px 0;
+            word-break: break-word;
+            border-left: 3px solid transparent;
+            padding-left: 8px;
+            transition: 0.1s;
+        }
+
+        .terminal-line.prompt {
+            color: #b0ffb0;
+        }
+
+        .terminal-line.input {
+            color: #ffd966;
+        }
+
+        .terminal-line.output {
+            color: #99d6ff;
+        }
+
+        .terminal-line.success {
+            color: #80ff80;
+            border-left-color: #00ff80;
+        }
+
+        .terminal-line.vuln {
+            color: #ff8080;
+            border-left-color: #ff3b3b;
             font-weight: 600;
-            font-size: 1.5rem;
-            padding: 18px 40px;
+            text-shadow: 0 0 8px #f00;
+        }
+
+        .terminal-line.warn {
+            color: #ffbf80;
+            border-left-color: #ffaa33;
+        }
+
+        .terminal-line.info {
+            color: #aad0ff;
+            border-left-color: #3399ff;
+        }
+
+        /* Progress bar container */
+        .progress-container {
+            background: #122b3f;
+            border-radius: 30px;
+            height: 20px;
+            margin: 15px 0;
+            border: 1px solid #2b90d9;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px #000;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00c3ff, #0077ff);
+            box-shadow: 0 0 20px #00a6ff;
+            transition: width 0.3s ease;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #bbf0ff;
+            margin-bottom: 4px;
+        }
+
+        /* Memory map grid */
+        .mem-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 6px;
+            margin: 20px 0;
+        }
+
+        .mem-cell {
+            background: #1b3144;
+            border-radius: 6px;
+            padding: 8px 4px;
+            text-align: center;
+            font-size: 0.7rem;
+            border: 1px solid #2a6b9e;
+            color: #bbffff;
+            transition: 0.2s;
+        }
+
+        .mem-cell.spray {
+            background: #2a5f3a;
+            border-color: #6aff6a;
+            box-shadow: 0 0 8px #0f0;
+        }
+
+        .mem-cell.corrupt {
+            background: #942e2e;
+            border-color: #ff5e5e;
+            box-shadow: 0 0 12px #f66;
+        }
+
+        /* Control buttons */
+        .button-panel {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 25px 0 15px;
+            flex-wrap: wrap;
+        }
+
+        .cyber-button {
+            background: #0e263b;
+            border: 2px solid #2f93d1;
+            color: #dcf0ff;
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
+            font-size: 1.3rem;
+            padding: 14px 32px;
             border-radius: 60px;
             cursor: pointer;
-            box-shadow: 0 10px 20px #0f2640;
+            box-shadow: 0 0 20px #0055aa, inset 0 0 10px #00b7ff;
             transition: 0.15s;
-            border: 1px solid #79aeff;
-            width: 100%;
-            max-width: 300px;
-            margin: 20px auto;
-            display: block;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
-        .button:hover {
-            background: #2a62a8;
+
+        .cyber-button:hover {
+            background: #1f4b70;
+            border-color: #5bc0ff;
+            box-shadow: 0 0 35px #0088ff, inset 0 0 20px #9fd9ff;
             transform: scale(1.02);
-            box-shadow: 0 15px 25px #0a1c30;
         }
-        .button:active {
+
+        .cyber-button:active {
             transform: scale(0.98);
         }
-        .log {
-            background: #0c1a28;
-            color: #c6e2ff;
-            padding: 22px;
-            border-radius: 28px;
-            font-family: 'Fira Code', 'SF Mono', monospace;
-            font-size: 0.95rem;
-            white-space: pre-wrap;
-            word-break: break-word;
-            max-height: 320px;
-            overflow-y: auto;
-            border: 1px solid #2f5785;
-            margin: 30px 0 15px;
-        }
-        .success { color: #b0ffb0; }
-        .vuln { color: #ffa8a8; font-weight: 600; }
-        .warn { color: #ffde9e; }
-        .badge {
-            background: #2b507a;
-            color: white;
-            padding: 5px 14px;
-            border-radius: 40px;
-            font-size: 0.85rem;
-            display: inline-block;
-            margin: 5px 10px 5px 0;
-        }
+
+        /* Footer */
         .footer {
-            background: #deeaff;
-            padding: 20px 32px 24px;
-            border-top: 1px solid #aac2ea;
-            color: #1e3f64;
-            font-size: 0.9rem;
+            border-top: 1px solid #23679b;
+            margin-top: 20px;
+            padding-top: 18px;
+            font-size: 0.85rem;
+            color: #7fb7da;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        hr {
-            border: 1px solid #adc6f0;
-            margin: 20px 0;
+
+        .blink {
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Scrollbar styling */
+        .terminal-screen::-webkit-scrollbar {
+            width: 8px;
+        }
+        .terminal-screen::-webkit-scrollbar-track {
+            background: #102b3f;
+        }
+        .terminal-screen::-webkit-scrollbar-thumb {
+            background: #2b7bbf;
+            border-radius: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="card">
+    <canvas id="matrix-canvas"></canvas>
+
+    <div class="terminal-container">
         <div class="header">
-            <h1>
-                🎮 PS4 WebKit UAF 
-                <span>simulation</span>
-            </h1>
-            <p style="opacity:0.85;">Educational demonstration of a use‑after‑free exploit flow (no actual vulnerability)</p>
-        </div>
-
-        <div class="content">
-            <div class="info">
-                <strong>🔬 How this works:</strong> The code mimics the structure of real PS4 WebKit exploits:
-                <ol style="margin:8px 0 0 20px;">
-                    <li>Spray the heap with many objects (Float64Array).</li>
-                    <li>Enter fullscreen to trigger a garbage collection or a timing window.</li>
-                    <li>On blur (fullscreen exit), attempt to reclaim freed memory with controlled data.</li>
-                    <li>Detect corruption and simulate a crash.</li>
-                </ol>
-                ⚠️ This page does <em>not</em> exploit any real vulnerability – it's a safe simulation.
+            <div class="title">
+                PS4<span>::</span>UAF<span>_</span>v2.0
             </div>
-
-            <button class="button" id="runBtn">▶ RUN EXPLOIT</button>
-
-            <div class="log" id="log">
-                ⏵ Ready. Click the button to start the simulation.
-            </div>
-
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                <span class="badge">fullscreen may be used</span>
-                <span class="badge" style="background:#705090;">simulated crash</span>
-                <span class="badge" style="background:#3d6b5c;">PS4 style</span>
-            </div>
-
-            <hr>
-
-            <div style="font-size:0.95rem; background:#eaf2fd; padding:18px; border-radius:20px;">
-                <p>📌 <strong>Real PS4 exploits</strong> (like for FW 9.00) use similar steps: heap spraying, use-after-free, and ROP. This simulation follows the same pattern but ends with a simulated crash message instead of actual code execution.</p>
+            <div class="status-panel">
+                <div class="led"></div>
+                <div class="sys-info">THERMAL: 66°C</div>
+                <div class="sys-info">HEAP: 0x7f3a2000</div>
             </div>
         </div>
 
+        <!-- Memory map visualization (dynamic) -->
+        <div class="mem-grid" id="memGrid">
+            <!-- Generated by JS -->
+        </div>
+
+        <!-- Progress bar for exploit stage -->
+        <div class="progress-label">
+            <span>EXPLOIT STAGE: <span id="stageName">IDLE</span></span>
+            <span id="stagePercent">0%</span>
+        </div>
+        <div class="progress-container">
+            <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+        </div>
+
+        <!-- Terminal output window -->
+        <div class="terminal-screen" id="terminal">
+            <div class="terminal-line prompt">[ PS4 WebKit UAF Terminal ]</div>
+            <div class="terminal-line output">⏵ System ready. Press [RUN EXPLOIT] to initiate.</div>
+            <div class="terminal-line info">⚠️ All actions are simulated – no actual vulnerability.</div>
+        </div>
+
+        <!-- Button panel -->
+        <div class="button-panel">
+            <button class="cyber-button" id="runBtn">🔥 RUN EXPLOIT</button>
+            <button class="cyber-button" id="resetBtn">⟲ RESET</button>
+        </div>
+
+        <!-- Footer with fake stats -->
         <div class="footer">
-            🛡️ This page is for educational purposes only. It does not contain any working exploit and cannot harm your device.
+            <span>WEBKIT 605.1.15 · PS4 9.00 TARGET</span>
+            <span class="blink">⏻ ONLINE</span>
         </div>
     </div>
 
     <script>
         (function() {
-            const logDiv = document.getElementById('log');
-            const runBtn = document.getElementById('runBtn');
-
-            // Clear and log
-            function clearLog() {
-                logDiv.innerHTML = '';
+            // ---------- Matrix rain background effect ----------
+            const canvas = document.getElementById('matrix-canvas');
+            const ctx = canvas.getContext('2d');
+            let width, height;
+            function resizeCanvas() {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
             }
-            function log(message, className = '') {
-                const line = document.createElement('div');
-                line.textContent = message;
-                if (className) line.classList.add(className);
-                logDiv.appendChild(line);
-                logDiv.scrollTop = logDiv.scrollHeight;
-            }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
 
-            // Step logging with delays to simulate real exploit stages
-            async function runExploit() {
-                clearLog();
-                log('⏳ [*] Starting PS4 WebKit UAF simulation...', 'info');
+            const chars = "01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン";
+            const fontSize = 14;
+            const columns = width / fontSize;
+            const drops = [];
+            for (let i = 0; i < columns; i++) drops[i] = 1;
 
-                // ---- Stage 1: Heap spray ----
-                log('[*] Spraying the heap with Float64Array objects...', 'info');
-                let sprayed = [];
-                const PATTERN = 2.121995791e-314; // a very small number (subnormal)
-                for (let i = 0; i < 5000; i++) {
-                    let arr = new Float64Array(8);
-                    arr[0] = i;          // mark with index
-                    sprayed.push(arr);
+            function drawMatrix() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, width, height);
+                ctx.fillStyle = '#0f0';
+                ctx.font = fontSize + 'px monospace';
+                for (let i = 0; i < drops.length; i++) {
+                    const text = chars[Math.floor(Math.random() * chars.length)];
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                    if (drops[i] * fontSize > height && Math.random() > 0.975)
+                        drops[i] = 0;
+                    drops[i]++;
                 }
-                log('[+] Spray complete: 5000 arrays allocated.', 'success');
+            }
+            setInterval(drawMatrix, 50);
 
-                // ---- Stage 2: Enter fullscreen (if supported) ----
-                log('[*] Requesting fullscreen to trigger potential GC / timing window...', 'warn');
+            // ---------- DOM elements ----------
+            const terminal = document.getElementById('terminal');
+            const runBtn = document.getElementById('runBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const memGrid = document.getElementById('memGrid');
+            const stageNameSpan = document.getElementById('stageName');
+            const stagePercentSpan = document.getElementById('stagePercent');
+            const progressFill = document.getElementById('progressFill');
+
+            // Helper to add terminal lines
+            function addTerminalLine(text, className = 'output') {
+                const line = document.createElement('div');
+                line.className = `terminal-line ${className}`;
+                line.textContent = text;
+                terminal.appendChild(line);
+                terminal.scrollTop = terminal.scrollHeight;
+            }
+
+            function clearTerminal() {
+                terminal.innerHTML = '';
+                addTerminalLine('[ PS4 WebKit UAF Terminal ]', 'prompt');
+                addTerminalLine('⏵ System ready. Press [RUN EXPLOIT] to initiate.', 'output');
+                addTerminalLine('⚠️ All actions are simulated – no actual vulnerability.', 'info');
+            }
+
+            // Update memory grid (visual simulation)
+            function updateMemGrid(stage) {
+                const gridSize = 64; // 8x8 = 64 cells
+                let html = '';
+                for (let i = 0; i < 64; i++) {
+                    let cellClass = 'mem-cell';
+                    if (stage === 'spray') {
+                        if (i < 40) cellClass += ' spray'; // first 40 cells sprayed
+                    } else if (stage === 'corrupt') {
+                        if (i >= 30 && i < 38) cellClass += ' corrupt';
+                        else if (i < 40) cellClass += ' spray';
+                    } else if (stage === 'idle') {
+                        // randomize a bit
+                        if (i % 7 === 0) cellClass += ' spray';
+                    }
+                    html += `<div class="${cellClass}">0x${(0x8000 + i).toString(16)}</div>`;
+                }
+                memGrid.innerHTML = html;
+            }
+            updateMemGrid('idle');
+
+            // Progress update
+            function setStage(stageName, percent) {
+                stageNameSpan.textContent = stageName;
+                stagePercentSpan.textContent = percent + '%';
+                progressFill.style.width = percent + '%';
+            }
+
+            // ---------- Exploit simulation (async steps) ----------
+            async function runExploit() {
+                // Reset UI
+                clearTerminal();
+                setStage('INIT', 0);
+                updateMemGrid('idle');
+
+                addTerminalLine('🔥 THERMAL UAF EXPLOIT SEQUENCE INITIATED', 'vuln');
+                addTerminalLine('[*] Target: WebKit 605.1.15 (PS4 9.00)', 'info');
+                await sleep(600);
+
+                // Stage 1: Heap spray
+                setStage('HEAP SPRAY', 15);
+                addTerminalLine('[ Stage 1 ] Spraying heap with Float64Array objects...', 'warn');
+                updateMemGrid('spray');
+                for (let i = 0; i < 5; i++) {
+                    addTerminalLine(`   Spraying block 0x${(0x7f3a2000 + i*0x1000).toString(16)} ...`, 'output');
+                    await sleep(300);
+                }
+                addTerminalLine('[+] 5000 arrays allocated. Pattern: 0x2.121995791e-314', 'success');
+                await sleep(500);
+
+                // Stage 2: Fullscreen trigger
+                setStage('FULLSCREEN TRIGGER', 35);
+                addTerminalLine('[ Stage 2 ] Requesting fullscreen to force GC / memory pressure...', 'warn');
                 const elem = document.documentElement;
                 if (elem.requestFullscreen) {
                     elem.requestFullscreen();
                 } else if (elem.webkitRequestFullscreen) {
                     elem.webkitRequestFullscreen();
                 } else {
-                    log('[!] Fullscreen not supported – simulation continues anyway.', 'warn');
+                    addTerminalLine('[!] Fullscreen not supported, simulating blur anyway.', 'warn');
                 }
+                addTerminalLine('[*] Waiting for blur event (switch tab or press ESC)...', 'info');
+                await sleep(800);
+                addTerminalLine('[*] Simulating blur event...', 'info');
 
-                // ---- Stage 3: onblur (fullscreen exit) triggers the "exploit" ----
-                window.addEventListener('blur', function onBlurHandler() {
-                    // Remove handler to avoid multiple triggers
-                    window.removeEventListener('blur', onBlurHandler);
+                // Manually trigger blur logic (since we can't force it)
+                // We'll simulate the onblur actions directly.
+                await handleBlurSimulation();
 
-                    log('', '');
-                    log('[*] Blur event – fullscreen likely exited or tab switched.', 'warn');
-                    log('[*] Attempting to reclaim memory with controlled data...', 'info');
-
-                    // Simulate freeing of sprayed arrays (in a real exploit they would be freed)
-                    // We'll just pretend they are gone and spray again.
-                    let spray2 = [];
-                    for (let i = 0; i < 8000; i++) {
-                        let p = new Float64Array(10);
-                        p.fill(PATTERN);
-                        spray2.push(p);
+                async function handleBlurSimulation() {
+                    setStage('UAF TRIGGER', 60);
+                    addTerminalLine('', '');
+                    addTerminalLine('[ Stage 3 ] Blur detected – free() called on sprayed region', 'vuln');
+                    updateMemGrid('corrupt');
+                    await sleep(600);
+                    addTerminalLine('[*] Reclaiming memory with controlled data (heap spray #2)...', 'warn');
+                    for (let i = 0; i < 4; i++) {
+                        addTerminalLine(`   Spraying 0x${(0x8c5e4000 + i*0x800).toString(16)} with pattern`, 'output');
+                        await sleep(250);
                     }
-                    log('[+] Re‑spray completed: 8000 arrays with pattern 0x2.121995791e-314', 'success');
+                    addTerminalLine('[+] 8000 new arrays placed, containing payload: 0x2.121995791e-314', 'success');
+                    await sleep(500);
 
-                    // ---- Stage 4: Detect corruption (simulated) ----
-                    log('[*] Checking for corrupted objects...', 'info');
-                    let corrupted = null;
-                    // In a real exploit, some of the original sprayed arrays might have been
-                    // freed and their memory reused by the second spray. Here we just simulate
-                    // that we found one.
-                    for (let i = 0; i < sprayed.length; i++) {
-                        // This condition will never be true because sprayed arrays are still alive,
-                        // but we force a simulated detection after a timeout.
+                    setStage('CORRUPTION CHECK', 80);
+                    addTerminalLine('[*] Scanning for corrupted objects...', 'info');
+                    await sleep(700);
+                    addTerminalLine('[!] CORRUPTION DETECTED at offset 0x7f3a2f30', 'vuln');
+                    updateMemGrid('corrupt');
+
+                    setStage('CRASH SIMMING', 95);
+                    addTerminalLine('', '');
+                    addTerminalLine('⚠️  Use-after-free successfully triggered!', 'vuln');
+                    addTerminalLine('⚠️  Overwriting vtable pointer...', 'vuln');
+                    await sleep(500);
+                    addTerminalLine('[*] Redirecting execution to ROP chain...', 'info');
+                    await sleep(400);
+
+                    // Final crash message with glitch
+                    setStage('KERNEL PANIC', 100);
+                    addTerminalLine('', '');
+                    addTerminalLine('══════════════════════════════════════════════', 'vuln');
+                    addTerminalLine('💥  CRASH SIMULATED – SYSTEM WOULD REBOOT', 'vuln');
+                    addTerminalLine('══════════════════════════════════════════════', 'vuln');
+                    addTerminalLine('   In a real vulnerable PS4, this would lead to', 'vuln');
+                    addTerminalLine('   arbitrary code execution (jailbreak).', 'vuln');
+                    addTerminalLine('', '');
+                    addTerminalLine('✅ Simulation complete – your browser is safe.', 'success');
+
+                    // Add glitch class to last few lines for effect
+                    const lines = terminal.querySelectorAll('.terminal-line');
+                    if (lines.length > 3) {
+                        lines[lines.length-3].classList.add('glitch-text');
+                        lines[lines.length-2].classList.add('glitch-text');
                     }
-
-                    // Simulate a delay then "crash"
-                    setTimeout(() => {
-                        log('[!] CORRUPTION DETECTED: UAF triggered successfully!', 'vuln');
-                        log('[!] Simulating browser crash...', 'vuln');
-                        log('', '');
-                        log('══════════════════════════════════════', 'vuln');
-                        log('💥  CRASH SIMULATED – ON A REAL VULNERABLE PS4 THIS WOULD LEAD TO CODE EXECUTION.', 'vuln');
-                        log('══════════════════════════════════════', 'vuln');
-                        log('', '');
-                        log('[*] In a real exploit, the next step would be:', 'info');
-                        log('    - ROP chain setup', 'info');
-                        log('    - syscall to dump firmware', 'info');
-                        log('    - Or simply kernel panic', 'info');
-                        log('', '');
-                        log('✅ Simulation complete – your browser is safe.', 'success');
-                    }, 1500);
-                });
-
-                log('[*] Waiting for blur event (switch tab or exit fullscreen)...', 'info');
-                log('   (If you are already in fullscreen, press ESC or switch tabs.)', '');
+                }
             }
 
+            function sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            // Reset function
+            function resetAll() {
+                clearTerminal();
+                setStage('IDLE', 0);
+                updateMemGrid('idle');
+            }
+
+            // Event listeners
             runBtn.addEventListener('click', runExploit);
+            resetBtn.addEventListener('click', resetAll);
+
+            // Ensure fullscreen change detection (just for realism)
+            document.addEventListener('fullscreenchange', () => {
+                if (!document.fullscreenElement) {
+                    addTerminalLine('[system] Fullscreen exited.', 'info');
+                }
+            });
+            document.addEventListener('webkitfullscreenchange', () => {
+                if (!document.webkitFullscreenElement) {
+                    addTerminalLine('[system] Fullscreen exited.', 'info');
+                }
+            });
         })();
     </script>
 </body>
